@@ -1,0 +1,12 @@
+/*
+ * Copyright 2026 NXP
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+
+/* Disable peripherals handled outside the Zephyr device model */
+/delete-node/ &netc;
+
+&gpt1 {
+	status = "disabled";
+};

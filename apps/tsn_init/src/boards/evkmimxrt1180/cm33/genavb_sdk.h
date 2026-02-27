@@ -14,6 +14,8 @@
 #include "fsl_netc_soc.h"
 #include "fsl_phy.h"
 
+#define BOARD_NET_TX_CACHEABLE
+
 #define BOARD_NET_RX_PACKETS 2
 #define BOARD_NET_RX_PERIOD_MULT 2
 
