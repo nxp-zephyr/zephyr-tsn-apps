@@ -1,0 +1,21 @@
+# Copyright 2026 NXP
+# SPDX-License-Identifier: BSD-3-Clause
+
+config SYS_HEAP_STATS_PERIODIC_LOG
+    bool "Enable periodic system heap statistics logging"
+    select SYS_HEAP_RUNTIME_STATS
+    default n
+    help
+      Periodically log system heap statistics including free bytes,
+      allocated bytes, and maximum allocated bytes.
+
+if SYS_HEAP_STATS_PERIODIC_LOG
+
+config SYS_HEAP_STATS_PERIODIC_LOG_PERIOD
+    int "Period in milliseconds for heap statistics logging"
+    default 20000
+    help
+      Specifies how often System heap statistics shall be logged.
+      0 means that there is no logging.
+
+endif
