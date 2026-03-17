@@ -10,6 +10,7 @@ list(APPEND EXTRA_CONF_FILE
   "../../common/configs/base.conf"
   "../../common/configs/runtime-stats.conf"
   "../../common/configs/net.conf"
+  "../../common/configs/logging.conf"
 )
 
 # Common device tree overlays
