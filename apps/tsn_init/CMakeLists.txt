@@ -9,6 +9,7 @@ set(TOOLCHAIN_HAS_NEWLIB ON)
 list(APPEND EXTRA_CONF_FILE
   "../../common/configs/base.conf"
   "../../common/configs/runtime-stats.conf"
+  "../../common/configs/net.conf"
 )
 
 # Common device tree overlays
@@ -94,8 +95,11 @@ if(CONFIG_CODE_DATA_RELOCATION)
 
   file(GLOB_RECURSE ZEPHYR_NON_KERNEL_SOURCES
     ${ZEPHYR_BASE}/drivers/*.c
-    ${ZEPHYR_BASE}/subsys/*.c
+    ${ZEPHYR_BASE}/subsys/shell/*.c
+    ${ZEPHYR_BASE}/subsys/logging/*.c
   )
+
+  file(GLOB_RECURSE ZEPHYR_NET_SOURCES ${ZEPHYR_BASE}/subsys/net/*.c)
 
   # move heap management code (and libc hooks) to TCM
   file(GLOB_RECURSE ZEPHYR_LIB_SOURCES
@@ -116,6 +120,8 @@ if(CONFIG_CODE_DATA_RELOCATION)
 
   # Do not relocate system init code
   list(FILTER MCU_SDK_SOURCES EXCLUDE REGEX ".*/system_.*\.c")
+
+  zephyr_code_relocate(FILES ${ZEPHYR_NET_SOURCES} LOCATION hyperram0 NOKEEP)
 
   zephyr_code_relocate(FILES
     ${ZEPHYR_NON_KERNEL_SOURCES}

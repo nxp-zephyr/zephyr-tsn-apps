@@ -7,6 +7,7 @@ set(TOOLCHAIN_HAS_NEWLIB ON)
 list(APPEND EXTRA_CONF_FILE
   "../../common/configs/base.conf"
   "../../common/configs/runtime-stats.conf"
+  "../../common/configs/net.conf"
 )
 
 # Common device tree overlays
