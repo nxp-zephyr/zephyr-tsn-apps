@@ -11,8 +11,13 @@ if(CONFIG_BOARD_MIMXRT1180_EVK_MIMXRT1189_CM33)
   set(CONFIG "hybrid_tsn_basic")
 
 if(CONFIG_CODE_DATA_RELOCATION)
-  # workaround to have switch descriptors in non cacheable memory
-  zephyr_code_relocate(FILES ${ZEPHYR_BASE}/../gen_avb/rtos/net_port_netc_sw.c LOCATION DTCM_DATA_RODATA_BSS_NOINIT)
+  # Move the Switch GenAVB/TSN driver to TCM. This guarantees that the switch and endpoint desciptors are in non cacheable memory.
+  # Exclude the relatively large netc_sw_drivers variable to save DTCM space for the system heap.
+  zephyr_code_relocate(FILES ${ZEPHYR_BASE}/../gen_avb/rtos/net_port_netc_sw.c FILTER "^\\.bss\\.(?!netc_sw_drivers$).*" LOCATION DTCM_BSS_DATA)
+  zephyr_code_relocate(FILES ${ZEPHYR_BASE}/../gen_avb/rtos/net_port_netc_sw.c LOCATION ITCM_TEXT_RODATA)
+
+  zephyr_code_relocate(FILES ${ZEPHYR_BASE}/../gen_avb/rtos/net_port_enetc_ep.c LOCATION DTCM_BSS_DATA)
+  zephyr_code_relocate(FILES ${ZEPHYR_BASE}/../gen_avb/rtos/net_port_enetc_ep.c LOCATION ITCM_TEXT_RODATA)
 endif()
 else()
   message(ERROR "unsupported")
