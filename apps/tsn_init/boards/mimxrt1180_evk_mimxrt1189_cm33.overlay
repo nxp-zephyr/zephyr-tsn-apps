@@ -40,3 +40,23 @@
 &gpio6 {
 	status = "disabled";
 };
+
+/* Make ocram1 as default RAM region */
+/ {
+	chosen {
+		zephyr,sram  = &ocram1;
+	};
+};
+
+/* Remove zephyr,memory-region causing MPU regions conflicts */
+/delete-node/ &ocram1;
+
+&memory {
+	ocram1: memory@4000 {
+		compatible = "mmio-sram";
+		/* OCRAM1 first 16K access is blocked by TRDC */
+		reg = <0x4000 DT_SIZE_K(496)>;
+		#address-cells = <1>;
+		#size-cells = <1>;
+	};
+};
