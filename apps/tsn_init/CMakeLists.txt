@@ -103,6 +103,9 @@ if(CONFIG_CODE_DATA_RELOCATION)
     ${ZEPHYR_BASE}/../zephyr-tsn-apps/common/*.c
   )
 
+  # Do not relocate early_mem.c file used for early memcpy and memset
+  list(FILTER APPS_SOURCES EXCLUDE REGEX ".*/early_mem.c$")
+
   file(GLOB_RECURSE MCU_SDK_SOURCES
     ${ZEPHYR_BASE}/../modules/hal/nxp/mcux/mcux-sdk-ng/*.c
   )
@@ -119,6 +122,8 @@ if(CONFIG_CODE_DATA_RELOCATION)
   )
 endif()
 
+zephyr_linker_sources(ITCM_SECTION libc_itcm.ld)
+
 zephyr_compile_definitions_ifdef(CONFIG_BOARD_MIMXRT1180_EVK_MIMXRT1189_CM33 CONFIG_APP_TSN_BRIDGE)
 zephyr_compile_definitions_ifdef(CONFIG_BOARD_MIMXRT1180_EVK_MIMXRT1189_CM33 CONFIG_APP_EP_NUM_PORTS=2)
 zephyr_compile_definitions_ifdef(CONFIG_BOARD_MIMXRT1180_EVK_MIMXRT1189_CM33 CONFIG_APP_EP_LOGICAL_PORT_LIST={0,1})
@@ -134,6 +139,7 @@ target_sources(app PRIVATE
   src/common/gavb_stack.c
   src/common/system_config.c
   src/main.c
+  src/early_mem.c
 )
 
 zephyr_include_directories(
