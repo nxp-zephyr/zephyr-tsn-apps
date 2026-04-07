@@ -23,6 +23,7 @@ function(include_mcux_driver driver)
 endfunction()
 
 if(CONFIG_BOARD_MIMXRT1180_EVK_MIMXRT1189_CM33)
+  include_mcux_driver(rgpio)
   include_mcux_driver(gpt)
   set(CONFIG_MCUX_COMPONENT_driver.netc_rt1180 ON)
   set(CONFIG_MCUX_COMPONENT_driver.netc_switch ON)

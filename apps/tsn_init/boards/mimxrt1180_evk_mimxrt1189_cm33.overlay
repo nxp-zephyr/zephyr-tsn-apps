@@ -15,3 +15,28 @@
 	/* AHB RX buffer: <prefetch priority master_id buf_size> */
 	rx-buffer-config = <1 0 8 32>;
 };
+
+/* Disable all gpio nodes: the stack uses its own RGPIO driver when needed. */
+&gpio1 {
+	status = "disabled";
+};
+
+&gpio2 {
+	status = "disabled";
+};
+
+&gpio3 {
+	status = "disabled";
+};
+
+&gpio4 {
+	status = "disabled";
+};
+
+&gpio5 {
+	status = "disabled";
+};
+
+&gpio6 {
+	status = "disabled";
+};
