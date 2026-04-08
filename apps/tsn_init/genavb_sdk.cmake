@@ -48,3 +48,14 @@ zephyr_compile_definitions_ifdef(CONFIG_BOARD_MIMXRT1180_EVK_MIMXRT1189_CM33 FSL
 target_link_libraries(${MCUX_SDK_PROJECT_NAME} PRIVATE -Wl,--start-group)
 target_link_libraries(${MCUX_SDK_PROJECT_NAME} PRIVATE genavb_sdk)
 target_link_libraries(${MCUX_SDK_PROJECT_NAME} PRIVATE -Wl,--end-group)
+
+if(CONFIG_CODE_DATA_RELOCATION)
+  get_target_property(genavbtsn_libs genavb_sdk GENAVB_SDK_LIBRARIES)
+  if (NOT genavbtsn_libs)
+    message(FATAL_ERROR "No GENAVB_SDK_LIBRARIES property found for genavb_sdk target ")
+  endif()
+
+  foreach(genavbtsn_lib IN LISTS genavbtsn_libs)
+    zephyr_code_relocate(LIBRARY ${genavbtsn_lib} LOCATION RAM NOKEEP)
+  endforeach()
+endif()
