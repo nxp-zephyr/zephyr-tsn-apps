@@ -51,10 +51,47 @@ endif()
 include(genavb_sdk.cmake)
 
 if(CONFIG_CODE_DATA_RELOCATION)
-    if(CONFIG_CPU_CORTEX_M_HAS_VTOR)
-      zephyr_code_relocate(FILES ${ZEPHYR_BASE}/arch/arm/core/cortex_m/isr_wrapper.c LOCATION RAM)
-      zephyr_code_relocate(FILES ${ZEPHYR_BASE}/arch/arm/core/cortex_m/exc_exit.c LOCATION RAM)
-    endif()
+  set(TCM_FILES "")
+
+  if(CONFIG_CPU_CORTEX_M_HAS_VTOR)
+    list(APPEND TCM_FILES
+      ${ZEPHYR_BASE}/arch/arm/core/cortex_m/isr_wrapper.c
+      ${ZEPHYR_BASE}/arch/arm/core/cortex_m/exc_exit.c
+    )
+  endif()
+
+  list(APPEND TCM_FILES
+    ${ZEPHYR_BASE}/kernel/timer.c
+    ${ZEPHYR_BASE}/kernel/timeout.c
+    ${ZEPHYR_BASE}/kernel/sched.c
+    ${ZEPHYR_BASE}/kernel/msg_q.c
+    ${ZEPHYR_BASE}/kernel/mutex.c
+    ${ZEPHYR_BASE}/kernel/idle.c
+    ${ZEPHYR_BASE}/kernel/kheap.c
+    ${ZEPHYR_BASE}/kernel/sem.c
+    ${ZEPHYR_BASE}/kernel/spinlock_validate.c
+    ${ZEPHYR_BASE}/kernel/thread.c
+    ${ZEPHYR_BASE}/kernel/timeslicing.c
+    ${ZEPHYR_BASE}/kernel/thread.c
+    ${ZEPHYR_BASE}/kernel/thread_monitor.c
+    ${ZEPHYR_BASE}/kernel/device.c
+    ${ZEPHYR_BASE}/kernel/cpu_mask.c
+    ${ZEPHYR_BASE}/kernel/dynamic.c
+    ${ZEPHYR_BASE}/kernel/events.c
+    ${ZEPHYR_BASE}/arch/arm/core/cortex_m/thread.c
+    ${ZEPHYR_BASE}/arch/arm/core/cortex_m/swap_helper.S
+    ${ZEPHYR_BASE}/arch/arm/core/cortex_m/irq_manage.c
+    ${ZEPHYR_BASE}/arch/common/sw_isr_common.c
+  )
+
+  zephyr_code_relocate(FILES ${TCM_FILES} LOCATION ITCM_TEXT_RODATA NOKEEP)
+  zephyr_code_relocate(FILES ${TCM_FILES} LOCATION DTCM_DATA_BSS_NOINIT NOKEEP)
+
+  # mempool.c have the system heap in the data section:
+  # Do not relocate the NOINIT section to DTCM and overuse it just for the system heap
+  zephyr_code_relocate(FILES ${ZEPHYR_BASE}/kernel/mempool.c LOCATION ITCM_TEXT_RODATA NOKEEP)
+  zephyr_code_relocate(FILES ${ZEPHYR_BASE}/kernel/mempool.c LOCATION DTCM_DATA_BSS NOKEEP)
+
 endif()
 
 zephyr_compile_definitions_ifdef(CONFIG_BOARD_MIMXRT1180_EVK_MIMXRT1189_CM33 CONFIG_APP_TSN_BRIDGE)
