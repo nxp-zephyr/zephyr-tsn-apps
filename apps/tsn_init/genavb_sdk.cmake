@@ -45,11 +45,6 @@ target_sources(app PRIVATE
 
 zephyr_compile_definitions_ifdef(CONFIG_BOARD_MIMXRT1180_EVK_MIMXRT1189_CM33 FSL_ETH_ENABLE_CACHE_CONTROL)
 
-add_library(avb-core-lib STATIC IMPORTED)
-set_target_properties(avb-core-lib PROPERTIES IMPORTED_LOCATION ${GenAVBBuildPath}/libstack-core.a)
-add_dependencies(${MCUX_SDK_PROJECT_NAME} avb-core-lib stack-rtos)
-
 target_link_libraries(${MCUX_SDK_PROJECT_NAME} PRIVATE -Wl,--start-group)
-target_link_libraries(${MCUX_SDK_PROJECT_NAME} PRIVATE avb-core-lib)
-target_link_libraries(${MCUX_SDK_PROJECT_NAME} PRIVATE stack-rtos)
+target_link_libraries(${MCUX_SDK_PROJECT_NAME} PRIVATE genavb_sdk)
 target_link_libraries(${MCUX_SDK_PROJECT_NAME} PRIVATE -Wl,--end-group)
