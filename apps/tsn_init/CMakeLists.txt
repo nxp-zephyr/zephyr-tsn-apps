@@ -103,9 +103,17 @@ if(CONFIG_CODE_DATA_RELOCATION)
     ${ZEPHYR_BASE}/../zephyr-tsn-apps/common/*.c
   )
 
+  file(GLOB_RECURSE MCU_SDK_SOURCES
+    ${ZEPHYR_BASE}/../modules/hal/nxp/mcux/mcux-sdk-ng/*.c
+  )
+
+  # Do not relocate system init code
+  list(FILTER MCU_SDK_SOURCES EXCLUDE REGEX ".*/system_.*\.c")
+
   zephyr_code_relocate(FILES
     ${ZEPHYR_NON_KERNEL_SOURCES}
     ${APPS_SOURCES}
+    ${MCU_SDK_SOURCES}
     LOCATION RAM
     NOKEEP
   )
