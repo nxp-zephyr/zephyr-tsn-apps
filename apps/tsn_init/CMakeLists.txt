@@ -92,6 +92,14 @@ if(CONFIG_CODE_DATA_RELOCATION)
   zephyr_code_relocate(FILES ${ZEPHYR_BASE}/kernel/mempool.c LOCATION ITCM_TEXT_RODATA NOKEEP)
   zephyr_code_relocate(FILES ${ZEPHYR_BASE}/kernel/mempool.c LOCATION DTCM_DATA_BSS NOKEEP)
 
+  file(GLOB_RECURSE ZEPHYR_NON_KERNEL_SOURCES
+    ${ZEPHYR_BASE}/drivers/*.c
+    ${ZEPHYR_BASE}/subsys/*.c
+    ${ZEPHYR_BASE}/lib/*.c
+  )
+
+  zephyr_code_relocate(FILES ${ZEPHYR_NON_KERNEL_SOURCES} LOCATION RAM NOKEEP)
+
 endif()
 
 zephyr_compile_definitions_ifdef(CONFIG_BOARD_MIMXRT1180_EVK_MIMXRT1189_CM33 CONFIG_APP_TSN_BRIDGE)
