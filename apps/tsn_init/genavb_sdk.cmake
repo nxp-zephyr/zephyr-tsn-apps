@@ -26,11 +26,8 @@ endif()
 set(RTOS_APPS "${CMAKE_CURRENT_LIST_DIR}/src")
 set(APP_GENAVB_SDK_INCLUDE ${RTOS_APPS}/boards/${BoardDir})
 
-# Define an RTOS network buffer heap and place it in DTCM non-cacheable memory
+# Define an RTOS network buffer heap.
 add_compile_definitions(CONFIG_RTOS_NET_HEAP_SIZE=40960)
-if(CONFIG_CODE_DATA_RELOCATION)
-  zephyr_code_relocate(FILES ${ZEPHYR_BASE}/../rtos-abstraction-layer/zephyr/rtos_net_heap.c LOCATION DTCM_DATA_NOINIT)
-endif()
 
 add_subdirectory(${GenAVBPath} "${GenAVBBuildPath}")
 
@@ -58,4 +55,21 @@ if(CONFIG_CODE_DATA_RELOCATION)
   foreach(genavbtsn_lib IN LISTS genavbtsn_libs)
     zephyr_code_relocate(LIBRARY ${genavbtsn_lib} LOCATION RAM NOKEEP)
   endforeach()
+
+  # Place RTOS network buffer heap (NOINIT section) in DTCM non-cacheable memory.
+  zephyr_code_relocate(FILES ${ZEPHYR_BASE}/../rtos-abstraction-layer/zephyr/rtos_net_heap.c LOCATION DTCM_DATA_BSS_NOINIT NOKEEP)
+  zephyr_code_relocate(FILES ${ZEPHYR_BASE}/../rtos-abstraction-layer/zephyr/rtos_net_heap.c LOCATION ITCM_TEXT_RODATA NOKEEP)
+
+  file(GLOB_RECURSE RTOS_ABSTRACTION_SOURCES
+    ${ZEPHYR_BASE}/../rtos-abstraction-layer/zephyr/*.c
+  )
+
+  list(FILTER RTOS_ABSTRACTION_SOURCES EXCLUDE REGEX ".*/rtos_net_heap.c$")
+
+  zephyr_code_relocate(FILES
+    ${RTOS_ABSTRACTION_SOURCES}
+    LOCATION RAM
+    NOKEEP
+  )
+
 endif()

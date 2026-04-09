@@ -98,8 +98,17 @@ if(CONFIG_CODE_DATA_RELOCATION)
     ${ZEPHYR_BASE}/lib/*.c
   )
 
-  zephyr_code_relocate(FILES ${ZEPHYR_NON_KERNEL_SOURCES} LOCATION RAM NOKEEP)
+  file(GLOB_RECURSE APPS_SOURCES
+    ${ZEPHYR_BASE}/../zephyr-tsn-apps/apps/tsn_init/src/*.c
+    ${ZEPHYR_BASE}/../zephyr-tsn-apps/common/*.c
+  )
 
+  zephyr_code_relocate(FILES
+    ${ZEPHYR_NON_KERNEL_SOURCES}
+    ${APPS_SOURCES}
+    LOCATION RAM
+    NOKEEP
+  )
 endif()
 
 zephyr_compile_definitions_ifdef(CONFIG_BOARD_MIMXRT1180_EVK_MIMXRT1189_CM33 CONFIG_APP_TSN_BRIDGE)
