@@ -95,6 +95,10 @@ if(CONFIG_CODE_DATA_RELOCATION)
   file(GLOB_RECURSE ZEPHYR_NON_KERNEL_SOURCES
     ${ZEPHYR_BASE}/drivers/*.c
     ${ZEPHYR_BASE}/subsys/*.c
+  )
+
+  # move heap management code (and libc hooks) to TCM
+  file(GLOB_RECURSE ZEPHYR_LIB_SOURCES
     ${ZEPHYR_BASE}/lib/*.c
   )
 
@@ -120,6 +124,9 @@ if(CONFIG_CODE_DATA_RELOCATION)
     LOCATION RAM
     NOKEEP
   )
+
+  zephyr_code_relocate(FILES ${ZEPHYR_LIB_SOURCES} LOCATION ITCM_TEXT_RODATA NOKEEP)
+  zephyr_code_relocate(FILES ${ZEPHYR_LIB_SOURCES} LOCATION DTCM_DATA_BSS NOKEEP)
 endif()
 
 zephyr_linker_sources(ITCM_SECTION libc_itcm.ld)
