@@ -7,6 +7,8 @@
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 
+#include "rtos_abstraction_layer.h"
+
 LOG_MODULE_REGISTER(sys_heap_stats);
 
 #if defined(K_HEAP_MEM_POOL_SIZE) && (K_HEAP_MEM_POOL_SIZE > 0)
@@ -23,11 +25,22 @@ static void sys_heap_stats_fn(struct k_timer *dummy)
     ret = sys_heap_runtime_stats_get(&_system_heap.heap, &stats);
 
     if (ret == 0) {
-        LOG_INF("Free Bytes: %u, Allocated Bytes: %u, Max Allocated Bytes: %u",
+        LOG_INF("System Heap          - Free Bytes: %u, Allocated Bytes: %u, Max Allocated Bytes: %u",
                  stats.free_bytes, stats.allocated_bytes, stats.max_allocated_bytes);
     } else {
-        LOG_ERR("sys_heap_runtime_stats_get() failed: %d", ret);
+        LOG_ERR("sys_heap_runtime_stats_get() for system heap failed: %d", ret);
     }
+
+#if defined(CONFIG_RTOS_NET_HEAP_SIZE) && (CONFIG_RTOS_NET_HEAP_SIZE > 0)
+    ret = sys_heap_runtime_stats_get(&rtos_net_heap_handle->kheap->heap, &stats);
+
+    if (ret == 0) {
+        LOG_INF("Network Buffers Heap - Free Bytes: %u, Allocated Bytes: %u, Max Allocated Bytes: %u",
+                 stats.free_bytes, stats.allocated_bytes, stats.max_allocated_bytes);
+    } else {
+        LOG_ERR("sys_heap_runtime_stats_get() for rtos net heap failed: %d", ret);
+    }
+#endif
 }
 
 K_TIMER_DEFINE(sys_heap_timer, sys_heap_stats_fn, NULL);
