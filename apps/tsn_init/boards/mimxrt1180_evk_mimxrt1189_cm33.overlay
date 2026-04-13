@@ -12,6 +12,6 @@
 };
 
 &flexspi {
-    /* AHB RX buffer: <prefetch priority master_id buf_size> */
-    rx-buffer-config = <1 0 8 32>;
+	/* AHB RX buffer: <prefetch priority master_id buf_size> */
+	rx-buffer-config = <1 0 8 32>;
 };
