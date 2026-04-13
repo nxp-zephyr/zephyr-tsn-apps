@@ -1,0 +1,11 @@
+description: GenAVB/TSN Ethernet interface
+
+compatible: "nxp,genavbtsn-eth"
+
+include: base.yaml
+
+properties:
+  port-id:
+    type: int
+    required: true
+    description: GenAVB/TSN logical port id mapped to this interface

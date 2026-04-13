@@ -4,10 +4,7 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-#include "gavb_stack.h"
 #include "system_config.h"
-
-extern struct net_config system_net_cfg[CONFIG_APP_LOGICAL_PORTS];
 
 struct net_config *system_config_get_net(unsigned int port_id)
 {

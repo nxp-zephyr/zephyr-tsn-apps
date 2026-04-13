@@ -40,3 +40,17 @@
 &gpio6 {
 	status = "disabled";
 };
+
+/ {
+	genavbtsn_eth0: genavbtsn_eth@0 {
+		compatible = "nxp,genavbtsn-eth";
+		port-id = <0>;
+		status = "okay";
+	};
+
+	genavbtsn_eth1: genavbtsn_eth@1 {
+		compatible = "nxp,genavbtsn-eth";
+		port-id = <1>;
+		status = "okay";
+	};
+};

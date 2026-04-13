@@ -10,16 +10,10 @@
 struct net_config system_net_cfg[CONFIG_APP_LOGICAL_PORTS] = {
     [0] = {
         .hw_addr = {0x00, 0xBB, 0xCC, 0xDD, 0xEE, 0x00},
-        .ip_addr = {192, 168, 1, 4},
-        .net_mask = {255, 255, 255, 0},
-        .gw_addr = {192, 168, 1, 254},
     },
 #if CONFIG_APP_LOGICAL_PORTS > 1
     [1] = {
         .hw_addr = {0x00, 0xBB, 0xCC, 0xDD, 0xEE, 0x01},
-        .ip_addr = {192, 168, 2, 4},
-        .net_mask = {255, 255, 255, 0},
-        .gw_addr = {192, 168, 2, 254},
     },
 #endif
 #if CONFIG_APP_LOGICAL_PORTS > 2

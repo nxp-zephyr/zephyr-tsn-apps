@@ -20,6 +20,8 @@ if("${BOARD}" STREQUAL "mimxrt1180_evk/mimxrt1189/cm33")
   )
 endif()
 
+list(APPEND DTS_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../..)
+
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(tsn_init)
 set(MCUX_SDK_PROJECT_NAME app)
@@ -151,6 +153,7 @@ target_sources(app PRIVATE
   src/boards/${BoardDir}/pin_mux.c
   src/common/configs.c
   src/common/gavb_stack.c
+  src/common/genavbtsn_eth.c
   src/common/system_config.c
   src/main.c
   src/early_mem.c
