@@ -9,3 +9,7 @@ properties:
     type: int
     required: true
     description: GenAVB/TSN logical port id mapped to this interface
+  rx-batch-size:
+    type: int
+    required: true
+    description: RX packet batch size

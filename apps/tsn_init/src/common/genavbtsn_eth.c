@@ -35,7 +35,10 @@ struct ethernetif_ctx {
     struct genavb_socket_tx *tx_sock;
     struct genavb_socket_rx *rx_sock;
     bool started;
-    uint8_t buf[PKT_MAX_LEN];
+
+    uint8_t tx_buf[PKT_MAX_LEN];
+    uint8_t rx_buf[PKT_MAX_LEN];
+    unsigned int rx_n;
 };
 
 static int genavbtsn_eth_dev_init(const struct device *dev)
@@ -65,6 +68,71 @@ static void genavbtsn_eth_iface_init(struct net_if *iface)
 
 exit:
     return;
+}
+
+static int genavbtsn_eth_rx_frame(struct ethernetif_ctx *ctx, const uint8_t *buf, size_t len)
+{
+    struct net_pkt *pkt;
+    int rc;
+
+    pkt = net_pkt_rx_alloc_with_buffer(ctx->iface, len, AF_UNSPEC, 0, K_NO_WAIT);
+    if (!pkt) {
+        rc = -ENOMEM;
+        goto exit;
+    }
+
+    rc = net_pkt_write(pkt, buf, len);
+    if (rc < 0)
+        goto err_pkt;
+
+    rc = net_recv_data(ctx->iface, pkt);
+    if (rc < 0)
+        goto err_pkt;
+
+    rc = 0;
+    goto exit;
+
+err_pkt:
+    net_pkt_unref(pkt);
+exit:
+    return rc;
+}
+
+static int genavbtsn_eth_rx(struct ethernetif_ctx *ctx)
+{
+    size_t len;
+    int rc;
+    int i;
+
+    for (i = 0; i < ctx->rx_n; i++) {
+        rc = genavb_socket_rx(ctx->rx_sock, ctx->rx_buf, PKT_MAX_LEN, NULL);
+        if (rc <= 0) {
+            rc = -EIO;
+            goto exit;
+        }
+
+        len = rc;
+        rc = genavbtsn_eth_rx_frame(ctx, ctx->rx_buf, len);
+        if (rc)
+            goto exit;
+    }
+
+    rc = 0;
+
+exit:
+    return rc;
+}
+
+static void genavbtsn_eth_rx_cb(void *data)
+{
+    struct ethernetif_ctx *ctx = (struct ethernetif_ctx *)data;
+    int rc;
+
+    (void)genavbtsn_eth_rx(ctx);
+
+    rc = genavb_socket_rx_enable_callback(ctx->rx_sock);
+    if (rc != GENAVB_SUCCESS)
+        printk("genavbtsn_eth_rx_cb: genavb_socket_rx_enable_callback failed: %s\n", genavb_strerror(rc));
 }
 
 static int genavbtsn_eth_start(const struct device *dev)
@@ -103,10 +171,22 @@ static int genavbtsn_eth_start(const struct device *dev)
         goto exit;
     }
 
-    rc = genavb_socket_rx_open(&ctx->rx_sock, GENAVB_SOCKF_RAW, &rx_params);
+    rc = genavb_socket_rx_open(&ctx->rx_sock, GENAVB_SOCKF_RAW | GENAVB_SOCKF_NONBLOCK, &rx_params);
     if (rc != GENAVB_SUCCESS) {
         rc = -EIO;
         goto err_rx_open;
+    }
+
+    rc = genavb_socket_rx_set_callback(ctx->rx_sock, genavbtsn_eth_rx_cb, ctx);
+    if (rc != GENAVB_SUCCESS) {
+        rc = -EIO;
+        goto err_rx_callback;
+    }
+
+    rc = genavb_socket_rx_enable_callback(ctx->rx_sock);
+    if (rc != GENAVB_SUCCESS) {
+        rc = -EIO;
+        goto err_rx_callback;
     }
 
     ctx->started = true;
@@ -118,6 +198,9 @@ static int genavbtsn_eth_start(const struct device *dev)
 
     goto exit;
 
+err_rx_callback:
+    genavb_socket_rx_close(ctx->rx_sock);
+    ctx->rx_sock = NULL;
 err_rx_open:
     genavb_socket_tx_close(ctx->tx_sock);
     ctx->tx_sock = NULL;
@@ -134,6 +217,7 @@ static int genavbtsn_eth_stop(const struct device *dev)
         goto exit;
 
     net_eth_carrier_off(ctx->iface);
+    ctx->started = false;
 
     if (ctx->rx_sock) {
         genavb_socket_rx_close(ctx->rx_sock);
@@ -175,11 +259,11 @@ static int genavbtsn_eth_send(const struct device *dev, struct net_pkt *pkt)
         goto exit;
     }
 
-    rc = net_pkt_read(pkt, ctx->buf, len);
+    rc = net_pkt_read(pkt, ctx->tx_buf, len);
     if (rc)
         goto exit;
 
-    rc = genavb_socket_tx(ctx->tx_sock, (void *)ctx->buf, len);
+    rc = genavb_socket_tx(ctx->tx_sock, (void *)ctx->tx_buf, len);
     if (rc != GENAVB_SUCCESS)
         rc = -EIO;
     else
@@ -202,7 +286,9 @@ static const struct ethernet_api genavbtsn_eth_api = {
 #define IP_ETHERNET_INIT(n) \
     BUILD_ASSERT(DT_INST_PROP(n, port_id) < CONFIG_APP_LOGICAL_PORTS, \
                  "genavbtsn_eth port-id out of range"); \
-    static struct ethernetif_ctx genavbtsn_eth_ctx_##n; \
+    static struct ethernetif_ctx genavbtsn_eth_ctx_##n = { \
+        .rx_n = DT_INST_PROP(n, rx_batch_size), \
+    }; \
     static struct ethernetif_config genavbtsn_eth_cfg_##n = { \
         .port_id = DT_INST_PROP(n, port_id), \
         .cfg = &system_net_cfg[DT_INST_PROP(n, port_id)], \
