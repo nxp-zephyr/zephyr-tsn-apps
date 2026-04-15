@@ -28,11 +28,14 @@ struct ethernetif_config {
     struct net_config *cfg;
 };
 
+#define PKT_MAX_LEN (NET_ETH_MAX_FRAME_SIZE)
+
 struct ethernetif_ctx {
     struct net_if *iface;
     struct genavb_socket_tx *tx_sock;
     struct genavb_socket_rx *rx_sock;
     bool started;
+    uint8_t buf[PKT_MAX_LEN];
 };
 
 static int genavbtsn_eth_dev_init(const struct device *dev)
@@ -157,11 +160,33 @@ static enum ethernet_hw_caps genavbtsn_eth_get_capabilities(const struct device 
 
 static int genavbtsn_eth_send(const struct device *dev, struct net_pkt *pkt)
 {
-    ARG_UNUSED(dev);
-    ARG_UNUSED(pkt);
+    struct ethernetif_ctx *ctx = (struct ethernetif_ctx *)dev->data;
+    size_t len;
+    int rc = 0;
 
-    /* TODO */
-    return -ENOTSUP;
+    len = net_pkt_get_len(pkt);
+    if (len == 0) {
+        rc = -EINVAL;
+        goto exit;
+    }
+
+    if (len > PKT_MAX_LEN) {
+        rc = -EMSGSIZE;
+        goto exit;
+    }
+
+    rc = net_pkt_read(pkt, ctx->buf, len);
+    if (rc)
+        goto exit;
+
+    rc = genavb_socket_tx(ctx->tx_sock, (void *)ctx->buf, len);
+    if (rc != GENAVB_SUCCESS)
+        rc = -EIO;
+    else
+        rc = 0;
+
+exit:
+    return rc;
 }
 
 static const struct ethernet_api genavbtsn_eth_api = {
