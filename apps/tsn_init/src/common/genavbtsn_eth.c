@@ -14,6 +14,8 @@
 #include <zephyr/net/net_if.h>
 #include <zephyr/net/net_pkt.h>
 
+#include <ethernet/eth_stats.h>
+
 #include "genavb/error.h"
 #include "genavb/socket.h"
 #include "genavb/port.h"
@@ -35,6 +37,9 @@ struct ethernetif_ctx {
     struct genavb_socket_tx *tx_sock;
     struct genavb_socket_rx *rx_sock;
     bool started;
+#if defined(CONFIG_NET_STATISTICS_ETHERNET)
+    struct net_stats_eth stats;
+#endif
 
     uint8_t tx_buf[PKT_MAX_LEN];
     uint8_t rx_buf[PKT_MAX_LEN];
@@ -257,6 +262,19 @@ static int genavbtsn_eth_get_config(const struct device *dev,
     return -ENOTSUP;
 }
 
+#if defined(CONFIG_NET_STATISTICS_ETHERNET)
+static struct net_stats_eth *genavbtsn_eth_get_stats(const struct device *dev)
+{
+    struct ethernetif_ctx *ctx = (struct ethernetif_ctx *)dev->data;
+    struct net_stats_eth *res = NULL;
+
+    if (ctx)
+        res = &ctx->stats;
+
+    return res;
+}
+#endif
+
 static enum ethernet_hw_caps genavbtsn_eth_get_capabilities(const struct device *dev)
 {
     ARG_UNUSED(dev);
@@ -297,6 +315,9 @@ exit:
 
 static const struct ethernet_api genavbtsn_eth_api = {
     .iface_api.init = genavbtsn_eth_iface_init,
+#if defined(CONFIG_NET_STATISTICS_ETHERNET)
+    .get_stats = genavbtsn_eth_get_stats,
+#endif
     .start = genavbtsn_eth_start,
     .stop = genavbtsn_eth_stop,
     .get_capabilities = genavbtsn_eth_get_capabilities,
