@@ -9,6 +9,8 @@
 #include <stdint.h>
 #include <string.h>
 
+#include <zephyr/kernel.h>
+
 #include <zephyr/device.h>
 #include <zephyr/net/ethernet.h>
 #include <zephyr/net/net_if.h>
@@ -32,11 +34,20 @@ struct ethernetif_config {
 
 #define PKT_MAX_LEN (NET_ETH_MAX_FRAME_SIZE)
 
+#define LINK_MONITOR_STACK_SIZE 256
+#define LINK_MONITOR_PRIORITY (K_LOWEST_THREAD_PRIO - 2)
+#define LINK_MONITOR_PERIOD_MS 100
+
 struct ethernetif_ctx {
     struct net_if *iface;
     struct genavb_socket_tx *tx_sock;
     struct genavb_socket_rx *rx_sock;
     bool started;
+
+    bool link_up;
+    bool link_duplex;
+    uint64_t link_rate;
+
 #if defined(CONFIG_NET_STATISTICS_ETHERNET)
     struct net_stats_eth stats;
 #endif
@@ -45,6 +56,34 @@ struct ethernetif_ctx {
     uint8_t rx_buf[PKT_MAX_LEN];
     unsigned int rx_n;
 };
+
+#define GENAVBTSN_ETH_DEVICE_ENTRY(n) DEVICE_DT_INST_GET(n),
+
+static const struct device *const genavbtsn_eth_devs[] = {
+    DT_INST_FOREACH_STATUS_OKAY(GENAVBTSN_ETH_DEVICE_ENTRY)
+};
+
+K_KERNEL_STACK_DEFINE(genavbtsn_eth_link_monitor_stack, LINK_MONITOR_STACK_SIZE);
+static struct k_thread genavbtsn_eth_link_monitor_thread;
+
+static void genavbtsn_eth_link_state_update(struct ethernetif_ctx *ctx, bool up, bool duplex, uint64_t rate)
+{
+    bool link_changed = ctx->link_up != up;
+
+    ctx->link_up = up;
+    ctx->link_duplex = duplex;
+    ctx->link_rate = rate;
+
+    if (link_changed) {
+        if (ctx->link_up)
+            net_eth_carrier_on(ctx->iface);
+        else {
+            net_eth_carrier_off(ctx->iface);
+            ctx->link_duplex = 0;
+            ctx->link_rate = 0;
+        }
+    }
+}
 
 static int genavbtsn_eth_dev_init(const struct device *dev)
 {
@@ -158,8 +197,6 @@ static int genavbtsn_eth_start(const struct device *dev)
             .port = eth_cfg->port_id,
         },
     };
-    bool up, duplex;
-    uint64_t rate;
     int rc = 0;
 
     if (ctx->started)
@@ -195,11 +232,6 @@ static int genavbtsn_eth_start(const struct device *dev)
     }
 
     ctx->started = true;
-    rc = genavb_port_status_get(eth_cfg->port_id, &up, &duplex, &rate);
-    if (rc == GENAVB_SUCCESS && up)
-        net_eth_carrier_on(ctx->iface);
-    else
-        net_eth_carrier_off(ctx->iface);
 
     goto exit;
 
@@ -221,18 +253,13 @@ static int genavbtsn_eth_stop(const struct device *dev)
     if (!ctx->started)
         goto exit;
 
-    net_eth_carrier_off(ctx->iface);
     ctx->started = false;
 
-    if (ctx->rx_sock) {
-        genavb_socket_rx_close(ctx->rx_sock);
-        ctx->rx_sock = NULL;
-    }
+    genavb_socket_rx_close(ctx->rx_sock);
+    ctx->rx_sock = NULL;
 
-    if (ctx->tx_sock) {
-        genavb_socket_tx_close(ctx->tx_sock);
-        ctx->tx_sock = NULL;
-    }
+    genavb_socket_tx_close(ctx->tx_sock);
+    ctx->tx_sock = NULL;
 
     ctx->started = false;
 
@@ -312,6 +339,45 @@ static int genavbtsn_eth_send(const struct device *dev, struct net_pkt *pkt)
 exit:
     return rc;
 }
+
+static void genavbtsn_eth_link_monitor(void *arg1, void *arg2, void *arg3)
+{
+    ARG_UNUSED(arg1);
+    ARG_UNUSED(arg2);
+    ARG_UNUSED(arg3);
+    int rc;
+
+    while (1) {
+        k_sleep(K_MSEC(LINK_MONITOR_PERIOD_MS));
+
+        for (size_t i = 0; i < ARRAY_SIZE(genavbtsn_eth_devs); i++) {
+            const struct device *dev = genavbtsn_eth_devs[i];
+            const struct ethernetif_config *eth_cfg = dev->config;
+            struct ethernetif_ctx *ctx = dev->data;
+            bool up, duplex;
+            uint64_t rate;
+
+            if (gavb_stack_handle() == NULL)
+                continue;
+
+            rc = genavb_port_status_get(eth_cfg->port_id, &up, &duplex, &rate);
+            if (rc == GENAVB_SUCCESS)
+                genavbtsn_eth_link_state_update(ctx, up, duplex, rate);
+        }
+    }
+}
+
+static int genavbtsn_eth_link_monitor_thread_init(void)
+{
+    (void)k_thread_create(&genavbtsn_eth_link_monitor_thread,
+        genavbtsn_eth_link_monitor_stack, K_KERNEL_STACK_SIZEOF(genavbtsn_eth_link_monitor_stack),
+        &genavbtsn_eth_link_monitor, NULL, NULL, NULL, LINK_MONITOR_PRIORITY,
+        0, K_NO_WAIT);
+
+    return 0;
+}
+
+SYS_INIT(genavbtsn_eth_link_monitor_thread_init, APPLICATION, CONFIG_KERNEL_INIT_PRIORITY_DEFAULT);
 
 static const struct ethernet_api genavbtsn_eth_api = {
     .iface_api.init = genavbtsn_eth_iface_init,
