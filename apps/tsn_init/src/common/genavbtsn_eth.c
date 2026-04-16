@@ -235,6 +235,28 @@ exit:
     return rc;
 }
 
+static int genavbtsn_eth_set_config(const struct device *dev,
+                                     enum ethernet_config_type type,
+                                     const struct ethernet_config *config)
+{
+    ARG_UNUSED(dev);
+    ARG_UNUSED(type);
+    ARG_UNUSED(config);
+
+    return -ENOTSUP;
+}
+
+static int genavbtsn_eth_get_config(const struct device *dev,
+                                    enum ethernet_config_type type,
+                                    struct ethernet_config *config)
+{
+    ARG_UNUSED(dev);
+    ARG_UNUSED(type);
+    ARG_UNUSED(config);
+
+    return -ENOTSUP;
+}
+
 static enum ethernet_hw_caps genavbtsn_eth_get_capabilities(const struct device *dev)
 {
     ARG_UNUSED(dev);
@@ -278,6 +300,8 @@ static const struct ethernet_api genavbtsn_eth_api = {
     .start = genavbtsn_eth_start,
     .stop = genavbtsn_eth_stop,
     .get_capabilities = genavbtsn_eth_get_capabilities,
+    .set_config = genavbtsn_eth_set_config,
+    .get_config = genavbtsn_eth_get_config,
     .get_phy = NULL,
     .send = genavbtsn_eth_send,
 };
