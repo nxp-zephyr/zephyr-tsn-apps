@@ -27,7 +27,7 @@ set(RTOS_APPS "${CMAKE_CURRENT_LIST_DIR}/src")
 set(APP_GENAVB_SDK_INCLUDE ${RTOS_APPS}/boards/${BoardDir})
 
 # Define an RTOS network buffer heap and place it in DTCM non-cacheable memory
-add_compile_definitions("-DCONFIG_RTOS_NET_HEAP_SIZE=40960")
+add_compile_definitions(CONFIG_RTOS_NET_HEAP_SIZE=40960)
 if(CONFIG_CODE_DATA_RELOCATION)
   zephyr_code_relocate(FILES ${ZEPHYR_BASE}/../rtos-abstraction-layer/zephyr/rtos_net_heap.c LOCATION DTCM_DATA_NOINIT)
 endif()
