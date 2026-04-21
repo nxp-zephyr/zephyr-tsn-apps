@@ -32,6 +32,7 @@ SET(HAL_NXP_PATH "${ZEPHYR_BASE}/../modules/hal/nxp")
 SET(SdkRootDirPath "${HAL_NXP_PATH}/mcux/mcux-sdk-ng")
 
 include(../../common/libs/sys_heap_stats/sys_heap_stats.cmake)
+include(../../common/libs/genavb_shell/genavb_shell.cmake)
 
 function(include_mcux_driver driver)
   set(CONFIG_MCUX_COMPONENT_driver.${driver} ON)
@@ -114,6 +115,7 @@ if(CONFIG_CODE_DATA_RELOCATION)
   file(GLOB_RECURSE APPS_SOURCES
     ${ZEPHYR_BASE}/../zephyr-tsn-apps/apps/tsn_init/src/*.c
     ${ZEPHYR_BASE}/../zephyr-tsn-apps/common/*.c
+    ${ZEPHYR_BASE}/../zephyr-tsn-apps/rtos-apps/*.c
   )
 
   # Do not relocate early_mem.c file used for early memcpy and memset
@@ -142,12 +144,19 @@ endif()
 
 zephyr_linker_sources(ITCM_SECTION libc_itcm.ld)
 
+zephyr_compile_definitions_ifdef(CONFIG_BOARD_MIMXRT1180_EVK_MIMXRT1189_CM33 CONFIG_APP_FP)
+zephyr_compile_definitions_ifdef(CONFIG_BOARD_MIMXRT1180_EVK_MIMXRT1189_CM33 CONFIG_APP_QBV)
 zephyr_compile_definitions_ifdef(CONFIG_BOARD_MIMXRT1180_EVK_MIMXRT1189_CM33 CONFIG_APP_TSN_BRIDGE)
 zephyr_compile_definitions_ifdef(CONFIG_BOARD_MIMXRT1180_EVK_MIMXRT1189_CM33 CONFIG_APP_EP_NUM_PORTS=2)
 zephyr_compile_definitions_ifdef(CONFIG_BOARD_MIMXRT1180_EVK_MIMXRT1189_CM33 CONFIG_APP_EP_LOGICAL_PORT_LIST={0,1})
 
-set(RTOS_ABSTRACTION_LAYER_TARGET ${MCUX_SDK_PROJECT_NAME})
+set(RTOS_ABSTRACTION_LAYER_TARGET app)
 include(${RTOS_ABSTRACTION_LAYER_DIR}/rtos_abstraction_layer.cmake)
+
+set(RtosAppsPath "${ZEPHYR_BASE}/../rtos-apps")
+set(RTOS_APPS_TARGET app)
+include(${RtosAppsPath}/rtos_apps_log.cmake)
+include(${RtosAppsPath}/rtos_apps_shell.cmake)
 
 target_sources(app PRIVATE
   src/boards/${BoardDir}/board.c
