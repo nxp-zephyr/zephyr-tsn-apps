@@ -7,7 +7,9 @@
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 
+#if defined(CONFIG_RTOS_NET_HEAP_SIZE) && (CONFIG_RTOS_NET_HEAP_SIZE > 0)
 #include "rtos_abstraction_layer.h"
+#endif
 
 LOG_MODULE_REGISTER(sys_heap_stats);
 
