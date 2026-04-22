@@ -11,6 +11,13 @@ list(APPEND EXTRA_CONF_FILE
   "../../common/configs/runtime-stats.conf"
 )
 
+# Common device tree overlays
+if("${BOARD}" STREQUAL "mimxrt1180_evk/mimxrt1189/cm33")
+  list(APPEND EXTRA_DTC_OVERLAY_FILE
+    "../../common/overlays/mimxrt1180_evk_mimxrt1189_cm33_ocram1_ram.overlay"
+  )
+endif()
+
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(tsn_init)
 set(MCUX_SDK_PROJECT_NAME app)
