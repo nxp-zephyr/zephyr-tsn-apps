@@ -8,8 +8,10 @@
 #include "rtos_abstraction_layer.h"
 
 #include "genavb/error.h"
+#include "genavb/ether.h"
 #include "genavb/config.h"
 #include "genavb/genavb.h"
+#include "genavb/vlan.h"
 
 const unsigned int br_port_list[CONFIG_APP_BR_NUM_PORTS] = CONFIG_APP_BR_LOGICAL_PORT_LIST;
 
@@ -19,6 +21,29 @@ struct genavb_handle *gavb_stack_handle(void)
 {
     return s_genavb_handle;
 }
+
+#ifdef CONFIG_APP_TSN_BRIDGE
+static void gavb_bridge_vlan_init(void)
+{
+    struct genavb_vlan_port_map port_map[CONFIG_APP_BR_NUM_PORTS] = {0};
+    unsigned int port_id;
+    uint16_t vid;
+    int i, rc;
+
+    for (i = 0; i < CONFIG_APP_BR_NUM_PORTS; i++) {
+        port_id = br_port_list[i];
+
+        vid = VLAN_PVID_DEFAULT;
+
+        port_map[i].port_id = port_id;
+        port_map[i].control = GENAVB_VLAN_ADMIN_CONTROL_FIXED;
+
+        rc = genavb_vlan_update(vid, &port_map[i]);
+        if (rc < 0)
+            rtos_printf("genavb_vlan_update() failed: %s\n", genavb_strerror(rc));
+    }
+}
+#endif
 
 int gavb_stack_init(void)
 {
@@ -113,6 +138,10 @@ int gavb_stack_init(void)
         rtos_printf("genavb_init() failed: %s\n", genavb_strerror(rc));
         goto exit;
     }
+
+#ifdef CONFIG_APP_TSN_BRIDGE
+    gavb_bridge_vlan_init();
+#endif
 
 exit:
     if (genavb_config)
