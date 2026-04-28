@@ -42,14 +42,14 @@
 };
 
 / {
-	genavbtsn_eth0: genavbtsn_eth@0 {
+	genavbtsn_eth0: genavbtsn_eth0 {
 		compatible = "nxp,genavbtsn-eth";
 		port-id = <0>;
 		rx-batch-size = <4>;
 		status = "okay";
 	};
 
-	genavbtsn_eth1: genavbtsn_eth@1 {
+	genavbtsn_eth1: genavbtsn_eth1 {
 		compatible = "nxp,genavbtsn-eth";
 		port-id = <1>;
 		rx-batch-size = <4>;
