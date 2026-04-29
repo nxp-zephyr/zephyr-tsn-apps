@@ -8,9 +8,10 @@ set(TOOLCHAIN_HAS_NEWLIB ON)
 # Common configuration fragment files
 list(APPEND EXTRA_CONF_FILE
   "../../common/configs/base.conf"
-  "../../common/configs/runtime-stats.conf"
-  "../../common/configs/net.conf"
   "../../common/configs/logging.conf"
+  "../../common/configs/net.conf"
+  "../../common/configs/runtime-stats.conf"
+  "../../common/configs/shell.conf"
 )
 
 # Common device tree overlays
