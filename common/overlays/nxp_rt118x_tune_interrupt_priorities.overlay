@@ -1,0 +1,9 @@
+#define IRQ_UART_PRIORITY       6
+
+&lpuart1 {
+	interrupts = <19 IRQ_UART_PRIORITY>;
+};
+
+&lpuart12 {
+	interrupts = <159 IRQ_UART_PRIORITY>;
+};
