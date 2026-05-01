@@ -58,58 +58,36 @@ endif()
 include(genavb_sdk.cmake)
 
 if(CONFIG_CODE_DATA_RELOCATION)
-  set(TCM_FILES "")
+  file(GLOB_RECURSE ZEPHYR_KERNEL_SOURCES
+    ${ZEPHYR_BASE}/kernel/*.c
+  )
 
-  if(CONFIG_CPU_CORTEX_M_HAS_VTOR)
-    list(APPEND TCM_FILES
-      ${ZEPHYR_BASE}/arch/arm/core/cortex_m/isr_wrapper.c
-      ${ZEPHYR_BASE}/arch/arm/core/cortex_m/exc_exit.c
-    )
-  endif()
-
-  list(APPEND TCM_FILES
-    ${ZEPHYR_BASE}/kernel/timer.c
-    ${ZEPHYR_BASE}/kernel/timeout.c
-    ${ZEPHYR_BASE}/kernel/sched.c
-    ${ZEPHYR_BASE}/kernel/msg_q.c
-    ${ZEPHYR_BASE}/kernel/mutex.c
-    ${ZEPHYR_BASE}/kernel/idle.c
-    ${ZEPHYR_BASE}/kernel/kheap.c
-    ${ZEPHYR_BASE}/kernel/sem.c
-    ${ZEPHYR_BASE}/kernel/spinlock_validate.c
-    ${ZEPHYR_BASE}/kernel/thread.c
-    ${ZEPHYR_BASE}/kernel/timeslicing.c
-    ${ZEPHYR_BASE}/kernel/thread.c
-    ${ZEPHYR_BASE}/kernel/thread_monitor.c
-    ${ZEPHYR_BASE}/kernel/device.c
-    ${ZEPHYR_BASE}/kernel/cpu_mask.c
-    ${ZEPHYR_BASE}/kernel/dynamic.c
-    ${ZEPHYR_BASE}/kernel/events.c
-    ${ZEPHYR_BASE}/arch/arm/core/cortex_m/thread.c
-    ${ZEPHYR_BASE}/arch/arm/core/cortex_m/swap_helper.S
+  set(ZEPHYR_ARCH_SOURCES
     ${ZEPHYR_BASE}/arch/arm/core/cortex_m/irq_manage.c
+    ${ZEPHYR_BASE}/arch/arm/core/cortex_m/swap_helper.S
+    ${ZEPHYR_BASE}/arch/arm/core/cortex_m/thread.c
     ${ZEPHYR_BASE}/arch/common/sw_isr_common.c
   )
 
-  zephyr_code_relocate(FILES ${TCM_FILES} LOCATION ITCM_TEXT_RODATA NOKEEP)
-  zephyr_code_relocate(FILES ${TCM_FILES} LOCATION DTCM_DATA_BSS_NOINIT NOKEEP)
+  if(CONFIG_CPU_CORTEX_M_HAS_VTOR)
+    list(APPEND ZEPHYR_ARCH_SOURCES
+      ${ZEPHYR_BASE}/arch/arm/core/cortex_m/exc_exit.c
+      ${ZEPHYR_BASE}/arch/arm/core/cortex_m/isr_wrapper.c
+    )
+  endif()
 
-  # mempool.c have the system heap in the data section:
-  # Do not relocate the NOINIT section to DTCM and overuse it just for the system heap
-  zephyr_code_relocate(FILES ${ZEPHYR_BASE}/kernel/mempool.c LOCATION ITCM_TEXT_RODATA NOKEEP)
-  zephyr_code_relocate(FILES ${ZEPHYR_BASE}/kernel/mempool.c LOCATION DTCM_DATA_BSS NOKEEP)
+  file(GLOB_RECURSE ZEPHYR_LIB_SOURCES
+    ${ZEPHYR_BASE}/lib/*.c
+  )
 
   file(GLOB_RECURSE ZEPHYR_NON_KERNEL_SOURCES
     ${ZEPHYR_BASE}/drivers/*.c
-    ${ZEPHYR_BASE}/subsys/shell/*.c
     ${ZEPHYR_BASE}/subsys/logging/*.c
+    ${ZEPHYR_BASE}/subsys/shell/*.c
   )
 
-  file(GLOB_RECURSE ZEPHYR_NET_SOURCES ${ZEPHYR_BASE}/subsys/net/*.c)
-
-  # move heap management code (and libc hooks) to TCM
-  file(GLOB_RECURSE ZEPHYR_LIB_SOURCES
-    ${ZEPHYR_BASE}/lib/*.c
+  file(GLOB_RECURSE ZEPHYR_NET_SOURCES
+    ${ZEPHYR_BASE}/subsys/net/*.c
   )
 
   file(GLOB_RECURSE APPS_SOURCES
@@ -128,18 +106,13 @@ if(CONFIG_CODE_DATA_RELOCATION)
   # Do not relocate system init code
   list(FILTER MCU_SDK_SOURCES EXCLUDE REGEX ".*/system_.*\.c")
 
+  zephyr_code_relocate(FILES ${ZEPHYR_KERNEL_SOURCES} ${ZEPHYR_ARCH_SOURCES} ${ZEPHYR_LIB_SOURCES} LOCATION ITCM_TEXT_RODATA NOKEEP)
+  zephyr_code_relocate(FILES ${ZEPHYR_KERNEL_SOURCES} ${ZEPHYR_ARCH_SOURCES} ${ZEPHYR_LIB_SOURCES} LOCATION ITCM1_DATA_BSS NOKEEP)
+  # NOINIT catches the system heap memory pool
+  zephyr_code_relocate(FILES ${ZEPHYR_KERNEL_SOURCES} ${ZEPHYR_ARCH_SOURCES} ${ZEPHYR_LIB_SOURCES} LOCATION DTCM_NOINIT NOKEEP)
+  zephyr_code_relocate(FILES ${ZEPHYR_NON_KERNEL_SOURCES} ${APPS_SOURCES} ${MCU_SDK_SOURCES} LOCATION RAM NOKEEP)
   zephyr_code_relocate(FILES ${ZEPHYR_NET_SOURCES} LOCATION hyperram0 NOKEEP)
 
-  zephyr_code_relocate(FILES
-    ${ZEPHYR_NON_KERNEL_SOURCES}
-    ${APPS_SOURCES}
-    ${MCU_SDK_SOURCES}
-    LOCATION RAM
-    NOKEEP
-  )
-
-  zephyr_code_relocate(FILES ${ZEPHYR_LIB_SOURCES} LOCATION ITCM_TEXT_RODATA NOKEEP)
-  zephyr_code_relocate(FILES ${ZEPHYR_LIB_SOURCES} LOCATION DTCM_DATA_BSS NOKEEP)
 endif()
 
 zephyr_linker_sources(ITCM_SECTION ../../common/linker/libc_itcm.ld)
