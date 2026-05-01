@@ -40,7 +40,8 @@ target_sources(app PRIVATE
   src/boards/${BoardDir}/genavb_sdk.c
 )
 
-zephyr_compile_definitions_ifdef(CONFIG_BOARD_MIMXRT1180_EVK_MIMXRT1189_CM33 FSL_ETH_ENABLE_CACHE_CONTROL)
+# Enable if hal driver network buffers are in cacheable memory
+#zephyr_compile_definitions_ifdef(CONFIG_BOARD_MIMXRT1180_EVK_MIMXRT1189_CM33 FSL_ETH_ENABLE_CACHE_CONTROL)
 
 target_link_libraries(${MCUX_SDK_PROJECT_NAME} PRIVATE -Wl,--start-group)
 target_link_libraries(${MCUX_SDK_PROJECT_NAME} PRIVATE genavb_sdk)
