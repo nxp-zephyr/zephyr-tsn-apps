@@ -9,8 +9,8 @@
 #include <zephyr/kernel.h>
 
 #include "gavb_stack.h"
-#include "genavb/error.h"
 #include "board.h"
+#include "genavb_shell.h"
 
 #define TSN_INIT_STACK_SIZE 4096
 #define TSN_INIT_STACK_PRIO (K_LOWEST_THREAD_PRIO - 4)
@@ -27,6 +27,8 @@ static void tsn_init_main(void *p1, void *p2, void *p3)
     rc = gavb_stack_init();
     if (rc < 0)
         goto exit;
+
+    genavb_shell_init();
 
     printk("Starting GenAVB/TSN stack: success\n");
     return;

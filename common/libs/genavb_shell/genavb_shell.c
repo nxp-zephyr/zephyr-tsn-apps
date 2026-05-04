@@ -5,11 +5,20 @@
  */
 
 #include <zephyr/kernel.h>
+#include <zephyr/shell/shell_uart.h>
 
 #include "rtos_apps/shell/port_stats.h"
 #include "rtos_apps/shell/shell.h"
 #include "shell_config.h"
 #include "genavb_shell.h"
+
+#include "rtos_apps/shell/fdb.h"
+#include "rtos_apps/shell/fp.h"
+#include "rtos_apps/shell/frer.h"
+#include "rtos_apps/shell/psfp.h"
+#include "rtos_apps/shell/qbv.h"
+#include "rtos_apps/shell/stream_identification.h"
+#include "rtos_apps/shell/vlan.h"
 
 SHELL_SUBCMD_SET_CREATE(genavb_cmds, (genavb));
 
@@ -35,3 +44,25 @@ SHELL_SUBCMD_ADD((genavb), port_stats, NULL,
 SHELL_SUBCMD_ADD((genavb), log, NULL,
                  CMD_SHELL_LOG_HELP,
                  cmd_shell_log, 3, 0);
+
+void genavb_shell_init(void)
+{
+    void *shell = (void *)shell_backend_uart_get_ptr();
+
+    if (shell == NULL) {
+        printk("shell_backend_uart_get_ptr() failed\n");
+        return;
+    }
+
+    cmd_fdb_init(shell);
+#ifdef CONFIG_APP_FP
+    cmd_fp_init(shell);
+#endif
+    cmd_frer_init(shell);
+    cmd_psfp_init(shell);
+#ifdef CONFIG_APP_QBV
+    cmd_qbv_init(shell);
+#endif
+    cmd_stream_identification_init(shell);
+    cmd_vlan_init(shell);
+}
