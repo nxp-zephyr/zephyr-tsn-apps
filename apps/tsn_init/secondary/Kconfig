@@ -3,6 +3,6 @@
 
 source "Kconfig.zephyr"
 
-rsource "../../common/libs/sys_heap_stats/Kconfig"
+rsource "../../../common/libs/sys_heap_stats/Kconfig"
 
-rsource "Kconfig.multicore"
+rsource "../Kconfig.multicore"

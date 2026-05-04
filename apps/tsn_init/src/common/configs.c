@@ -1,5 +1,5 @@
 /*
- * Copyright 2022, 2024-2025 NXP
+ * Copyright 2022, 2024-2026 NXP
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -7,13 +7,19 @@
 #include "gavb_stack.h"
 #include "system_config.h"
 
+#if defined(CONFIG_TSN_MULTICORE_SECONDARY)
+#define MAC_ADDR_BYTE_1 0xEF
+#else
+#define MAC_ADDR_BYTE_1 0xEE
+#endif
+
 struct net_config system_net_cfg[CONFIG_APP_LOGICAL_PORTS] = {
     [0] = {
-        .hw_addr = {0x00, 0xBB, 0xCC, 0xDD, 0xEE, 0x00},
+        .hw_addr = {0x00, 0xBB, 0xCC, 0xDD, MAC_ADDR_BYTE_1, 0x00},
     },
 #if CONFIG_APP_LOGICAL_PORTS > 1
     [1] = {
-        .hw_addr = {0x00, 0xBB, 0xCC, 0xDD, 0xEE, 0x01},
+        .hw_addr = {0x00, 0xBB, 0xCC, 0xDD, MAC_ADDR_BYTE_1, 0x01},
     },
 #endif
 #if CONFIG_APP_LOGICAL_PORTS > 2

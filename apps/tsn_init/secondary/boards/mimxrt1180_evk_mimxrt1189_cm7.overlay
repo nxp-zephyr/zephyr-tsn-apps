@@ -1,0 +1,29 @@
+/*
+ * Copyright 2026 NXP
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+
+ / {
+	/* Make ocram2 as default RAM region for the CM7 core */
+	chosen {
+		zephyr,sram  = &ocram2;
+	};
+
+	mbox-consumer {
+		compatible = "vnd,mbox-consumer";
+		mboxes = <&mbox1_b 0>, <&mbox1_b 1>;
+		mbox-names = "tx", "rx";
+	};
+};
+
+/* Disable peripherals handled outside the Zephyr device model */
+/delete-node/ &netc;
+
+&gpt1 {
+	status = "disabled";
+};
+
+&gpt2 {
+	status = "disabled";
+};

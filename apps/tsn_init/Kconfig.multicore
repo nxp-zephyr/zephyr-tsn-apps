@@ -1,0 +1,14 @@
+config TSN_MULTICORE
+        bool "TSN Multicore"
+        depends on SECOND_CORE_MCUX
+        default n
+
+config TSN_MULTICORE_PRIMARY
+        bool "TSN Multicore Primary"
+        depends on TSN_MULTICORE
+        default y if TSN_MULTICORE && BOARD_MIMXRT1180_EVK_MIMXRT1189_CM33
+
+config TSN_MULTICORE_SECONDARY
+        bool "TSN Multicore Secondary"
+        depends on TSN_MULTICORE
+        default y if TSN_MULTICORE && BOARD_MIMXRT1180_EVK_MIMXRT1189_CM7

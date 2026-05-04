@@ -1,0 +1,9 @@
+source "share/sysbuild/Kconfig"
+
+config SECONDARY_BOARD
+        string "Remote board"
+        default "mimxrt1180_evk/mimxrt1189/cm7" if $(BOARD) = "mimxrt1180_evk"
+
+config TSN_MULTICORE_BUILD
+        bool "Build TSN multicore images"
+        default y

@@ -10,9 +10,6 @@
 
 #include "gavb_stack.h"
 #include "board.h"
-
-#include <zephyr/shell/shell.h>
-#include "genavb_shell.h"
 #include "init_sync.h"
 
 #define TSN_INIT_STACK_SIZE 4096
@@ -31,16 +28,7 @@ static void tsn_init_main(void *p1, void *p2, void *p3)
     if (rc < 0)
         goto exit;
 
-    genavb_shell_init();
-
     printk("Starting GenAVB/TSN stack: success\n");
-
-#if defined(CONFIG_TSN_MULTICORE_PRIMARY)
-    if (init_sync_signal_stack_ready() < 0) {
-        printk("init_sync_signal_stack_ready() failed\n");
-    }
-#endif
-
     return;
 
 exit:
@@ -50,6 +38,15 @@ exit:
 int main(void)
 {
     k_tid_t thread_ret;
+
+#if defined(CONFIG_TSN_MULTICORE_SECONDARY)
+    if (init_sync_wait_for_stack_ready() < 0) {
+        printk("init_sync_wait_for_stack_ready() failed\n");
+        return -1;
+    }
+#else
+#error "CONFIG_TSN_MULTICORE_SECONDARY must be defined"
+#endif
 
     BOARD_Init();
     BOARD_InitNVIC();

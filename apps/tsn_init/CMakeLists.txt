@@ -5,20 +5,26 @@ cmake_minimum_required(VERSION 3.20.0)
 # Use NEWLIB as libc to make it work with ARM GNU Toolchain out of the box.
 set(TOOLCHAIN_HAS_NEWLIB ON)
 
+set(AppRootPath ${CMAKE_CURRENT_SOURCE_DIR})
+set(CommonPath "${AppRootPath}/../../common")
+
 # Common configuration fragment files
 list(APPEND EXTRA_CONF_FILE
-  "../../common/configs/base.conf"
-  "../../common/configs/logging.conf"
-  "../../common/configs/net.conf"
-  "../../common/configs/runtime-stats.conf"
-  "../../common/configs/shell.conf"
+  "${CommonPath}/configs/base.conf"
+  "${CommonPath}/configs/logging.conf"
+  "${CommonPath}/configs/net.conf"
+  "${CommonPath}/configs/runtime-stats.conf"
+  "${CommonPath}/configs/shell.conf"
 )
 
+# Load zephyr extensions to get BOARD for sysbuild and regular builds
+find_package(Zephyr COMPONENTS extensions basic_settings REQUIRED HINTS $ENV{ZEPHYR_BASE})
+zephyr_get(_TARGET_BOARD VAR BOARD)
 # Common device tree overlays
-if("${BOARD}" STREQUAL "mimxrt1180_evk/mimxrt1189/cm33")
+if("${_TARGET_BOARD}" STREQUAL "mimxrt1180_evk/mimxrt1189/cm33")
   list(APPEND EXTRA_DTC_OVERLAY_FILE
-    "../../common/overlays/nxp_rt118x_cm33_memory.overlay"
-    "../../common/overlays/nxp_rt118x_tune_interrupt_priorities.overlay"
+    "${CommonPath}/overlays/nxp_rt118x_cm33_memory.overlay"
+    "${CommonPath}/overlays/nxp_rt118x_tune_interrupt_priorities.overlay"
   )
 endif()
 
@@ -31,8 +37,8 @@ set(MCUX_SDK_PROJECT_NAME app)
 SET(HAL_NXP_PATH "${ZEPHYR_BASE}/../modules/hal/nxp")
 SET(SdkRootDirPath "${HAL_NXP_PATH}/mcux/mcux-sdk-ng")
 
-include(../../common/libs/sys_heap_stats/sys_heap_stats.cmake)
-include(../../common/libs/genavb_shell/genavb_shell.cmake)
+include(${CommonPath}/libs/sys_heap_stats/sys_heap_stats.cmake)
+include(${CommonPath}/libs/genavb_shell/genavb_shell.cmake)
 
 function(include_mcux_driver driver)
   set(CONFIG_MCUX_COMPONENT_driver.${driver} ON)
@@ -55,16 +61,15 @@ if(CONFIG_BOARD_MIMXRT1180_EVK_MIMXRT1189_CM33)
   set(BoardDir "evkmimxrt1180/cm33")
 endif()
 
-include (../../common/relocation.cmake)
+include (${CommonPath}/relocation.cmake)
 
 include(genavb_sdk.cmake)
 
 if(CONFIG_CODE_DATA_RELOCATION)
 
   file(GLOB_RECURSE APPS_SOURCES
-    ${ZEPHYR_BASE}/../zephyr-tsn-apps/apps/tsn_init/src/*.c
-    ${ZEPHYR_BASE}/../zephyr-tsn-apps/common/*.c
-    ${ZEPHYR_BASE}/../zephyr-tsn-apps/rtos-apps/*.c
+    ${AppRootPath}/src/*.c
+    ${CommonPath}/*.c
   )
 
   # Do not relocate early_mem.c file used for early memcpy and memset
@@ -78,7 +83,7 @@ if(CONFIG_CODE_DATA_RELOCATION)
 
 endif()
 
-zephyr_linker_sources(ITCM_SECTION ../../common/linker/libc_itcm.ld)
+zephyr_linker_sources(ITCM_SECTION ${CommonPath}/linker/libc_itcm.ld)
 
 zephyr_compile_definitions_ifdef(CONFIG_BOARD_MIMXRT1180_EVK_MIMXRT1189_CM33 CONFIG_APP_FP)
 zephyr_compile_definitions_ifdef(CONFIG_BOARD_MIMXRT1180_EVK_MIMXRT1189_CM33 CONFIG_APP_QBV)
@@ -86,6 +91,7 @@ zephyr_compile_definitions_ifdef(CONFIG_BOARD_MIMXRT1180_EVK_MIMXRT1189_CM33 CON
 zephyr_compile_definitions_ifdef(CONFIG_BOARD_MIMXRT1180_EVK_MIMXRT1189_CM33 CONFIG_APP_EP_NUM_PORTS=2)
 zephyr_compile_definitions_ifdef(CONFIG_BOARD_MIMXRT1180_EVK_MIMXRT1189_CM33 CONFIG_APP_EP_LOGICAL_PORT_LIST={0,1})
 
+set(RTOS_ABSTRACTION_LAYER_DIR "${ZEPHYR_BASE}/../rtos-abstraction-layer/zephyr")
 set(RTOS_ABSTRACTION_LAYER_TARGET app)
 include(${RTOS_ABSTRACTION_LAYER_DIR}/rtos_abstraction_layer.cmake)
 
@@ -102,11 +108,18 @@ target_sources(app PRIVATE
   src/common/gavb_stack.c
   src/common/system_config.c
   src/main.c
-  ../../common/src/early_mem.c
-  ../../common/src/genavbtsn_eth.c
+  ${CommonPath}/src/early_mem.c
+  ${CommonPath}/src/genavbtsn_eth.c
 )
+
+if (CONFIG_TSN_MULTICORE)
+  target_sources(app PRIVATE
+    ${CommonPath}/src/init_sync.c
+  )
+endif()
 
 zephyr_include_directories(
   src/common
   src/boards/${BoardDir}
+  ${CommonPath}/src
 )

@@ -31,7 +31,7 @@ EOF
 
 CONFIGURATIONS=(
     "networking | mimxrt1180_evk/mimxrt1189/cm33 | no "
-    "tsn_init   | mimxrt1180_evk/mimxrt1189/cm33 | no "
+    "tsn_init   | mimxrt1180_evk/mimxrt1189/cm33 | yes "
 )
 
 # --- Runtime Default State ------------------------------------------------------------------
