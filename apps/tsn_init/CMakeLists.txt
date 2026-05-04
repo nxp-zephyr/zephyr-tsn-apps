@@ -63,6 +63,7 @@ if(CONFIG_CODE_DATA_RELOCATION)
   )
 
   set(ZEPHYR_ARCH_SOURCES
+    ${ZEPHYR_BASE}/arch/arm/core/cortex_m/cpu_idle.c
     ${ZEPHYR_BASE}/arch/arm/core/cortex_m/irq_manage.c
     ${ZEPHYR_BASE}/arch/arm/core/cortex_m/swap_helper.S
     ${ZEPHYR_BASE}/arch/arm/core/cortex_m/thread.c
@@ -83,6 +84,7 @@ if(CONFIG_CODE_DATA_RELOCATION)
   file(GLOB_RECURSE ZEPHYR_NON_KERNEL_SOURCES
     ${ZEPHYR_BASE}/drivers/*.c
     ${ZEPHYR_BASE}/subsys/logging/*.c
+    ${ZEPHYR_BASE}/subsys/random/*.c
     ${ZEPHYR_BASE}/subsys/shell/*.c
   )
 
