@@ -1,0 +1,35 @@
+/* Make ocram1 as default RAM region */
+/ {
+	chosen {
+		zephyr,sram  = &ocram1;
+	};
+};
+
+/* Remove zephyr,memory-region causing MPU regions conflicts */
+/delete-node/ &ocram1;
+
+/delete-node/ &itcm;
+
+&memory {
+	itcm: memory@1ffe0000 {
+		compatible = "zephyr,memory-region", "nxp,imx-itcm";
+		reg = <0x1ffe0000 DT_SIZE_K(80)>;
+		zephyr,memory-region = "ITCM";
+		zephyr,memory-attr = <DT_MEM_ARM(ATTR_MPU_FLASH)>;
+	};
+
+	itcm1: memory@1fff4000 {
+		compatible = "zephyr,memory-region", "nxp,imx-itcm";
+		reg = <0x1fff4000 DT_SIZE_K(48)>;
+		zephyr,memory-region = "ITCM1";
+		zephyr,memory-attr = <DT_MEM_ARM(ATTR_MPU_RAM_NOCACHE)>;
+	};
+
+	ocram1: memory@4000 {
+		compatible = "mmio-sram";
+		/* OCRAM1 first 16K access is blocked by TRDC */
+		reg = <0x4000 DT_SIZE_K(496)>;
+		#address-cells = <1>;
+		#size-cells = <1>;
+	};
+};

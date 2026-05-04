@@ -17,7 +17,7 @@ list(APPEND EXTRA_CONF_FILE
 # Common device tree overlays
 if("${BOARD}" STREQUAL "mimxrt1180_evk/mimxrt1189/cm33")
   list(APPEND EXTRA_DTC_OVERLAY_FILE
-    "../../common/overlays/mimxrt1180_evk_mimxrt1189_cm33_ocram1_ram.overlay"
+    "../../common/overlays/nxp_rt118x_cm33_memory.overlay"
     "../../common/overlays/nxp_rt118x_tune_interrupt_priorities.overlay"
   )
 endif()
