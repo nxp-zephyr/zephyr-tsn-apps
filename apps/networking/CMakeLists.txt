@@ -25,4 +25,9 @@ project(networking)
 
 include(../../common/libs/sys_heap_stats/sys_heap_stats.cmake)
 
-target_sources(app PRIVATE src/main.c)
+zephyr_linker_sources(ITCM_SECTION ../../common/linker/libc_itcm.ld)
+
+target_sources(app PRIVATE
+  src/main.c
+  ../../common/src/early_mem.c
+)

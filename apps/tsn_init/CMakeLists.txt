@@ -142,7 +142,7 @@ if(CONFIG_CODE_DATA_RELOCATION)
   zephyr_code_relocate(FILES ${ZEPHYR_LIB_SOURCES} LOCATION DTCM_DATA_BSS NOKEEP)
 endif()
 
-zephyr_linker_sources(ITCM_SECTION libc_itcm.ld)
+zephyr_linker_sources(ITCM_SECTION ../../common/linker/libc_itcm.ld)
 
 zephyr_compile_definitions_ifdef(CONFIG_BOARD_MIMXRT1180_EVK_MIMXRT1189_CM33 CONFIG_APP_FP)
 zephyr_compile_definitions_ifdef(CONFIG_BOARD_MIMXRT1180_EVK_MIMXRT1189_CM33 CONFIG_APP_QBV)
@@ -167,7 +167,7 @@ target_sources(app PRIVATE
   src/common/genavbtsn_eth.c
   src/common/system_config.c
   src/main.c
-  src/early_mem.c
+  ../../common/src/early_mem.c
 )
 
 zephyr_include_directories(
