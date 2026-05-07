@@ -7,6 +7,7 @@
 #include <zephyr/kernel.h>
 
 #include "rtos_apps/shell/port_stats.h"
+#include "rtos_apps/shell/shell.h"
 #include "shell_config.h"
 #include "genavb_shell.h"
 
@@ -30,3 +31,7 @@ SHELL_SUBCMD_ADD((net), genavb, &genavb_cmds,
 SHELL_SUBCMD_ADD((genavb), port_stats, NULL,
                  CMD_PORT_STATS_HELP,
                  cmd_port_stats, 2, 0);
+
+SHELL_SUBCMD_ADD((genavb), log, NULL,
+                 CMD_SHELL_LOG_HELP,
+                 cmd_shell_log, 3, 0);
