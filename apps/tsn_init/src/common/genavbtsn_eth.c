@@ -53,7 +53,7 @@ struct ethernetif_ctx {
 #endif
 
     uint8_t tx_buf[PKT_MAX_LEN];
-    uint8_t rx_buf[PKT_MAX_LEN];
+    struct genavb_iovec *rx_iov;
     unsigned int rx_n;
 };
 
@@ -114,6 +114,37 @@ exit:
     return;
 }
 
+static int genavbtsn_eth_init_rx(struct ethernetif_ctx *ctx)
+{
+    unsigned int rx_alloc_size;
+    int rc = 0;
+
+    rx_alloc_size = sizeof(struct genavb_iovec) * ctx->rx_n;
+
+    ctx->rx_iov = k_malloc(rx_alloc_size);
+    if (!ctx->rx_iov) {
+        printk("Failed to allocate RX buffer");
+        rc = -ENOMEM;
+        goto exit;
+    }
+
+    memset(ctx->rx_iov, 0, rx_alloc_size);
+
+exit:
+    return rc;
+}
+
+static void genavbtsn_eth_rx_free(struct ethernetif_ctx *ctx, unsigned int n)
+{
+    void *buf[n];
+    int i;
+
+    for (i = 0; i < n; i++)
+        buf[i] = ctx->rx_iov[i].iov_base;
+
+    genavb_socket_rx_free(buf, n);
+}
+
 static int genavbtsn_eth_rx_frame(struct ethernetif_ctx *ctx, const uint8_t *buf, size_t len)
 {
     struct net_pkt *pkt;
@@ -144,24 +175,25 @@ exit:
 
 static int genavbtsn_eth_rx(struct ethernetif_ctx *ctx)
 {
-    size_t len;
-    int rc;
-    int i;
+    int rc, pkts;
+    int i, n;
 
-    for (i = 0; i < ctx->rx_n; i++) {
-        rc = genavb_socket_rx(ctx->rx_sock, ctx->rx_buf, PKT_MAX_LEN, NULL);
-        if (rc <= 0) {
-            rc = -EIO;
-            goto exit;
-        }
+    n = ctx->rx_n;
 
-        len = rc;
-        rc = genavbtsn_eth_rx_frame(ctx, ctx->rx_buf, len);
-        if (rc)
-            goto exit;
+    pkts = genavb_socket_rx_receive_iov(ctx->rx_sock, ctx->rx_iov, NULL, n);
+    if (pkts <= 0) {
+        rc = -EIO;
+        goto exit;
     }
 
     rc = 0;
+    for (i = 0; i < pkts; i++) {
+        rc = genavbtsn_eth_rx_frame(ctx, ctx->rx_iov[i].iov_base, ctx->rx_iov[i].iov_len);
+        if (rc)
+            break;
+    }
+
+    genavbtsn_eth_rx_free(ctx, pkts);
 
 exit:
     return rc;
@@ -197,6 +229,7 @@ static int genavbtsn_eth_start(const struct device *dev)
             .port = eth_cfg->port_id,
         },
     };
+    genavb_sock_f_t flags;
     int rc = 0;
 
     if (ctx->started)
@@ -213,7 +246,13 @@ static int genavbtsn_eth_start(const struct device *dev)
         goto exit;
     }
 
-    rc = genavb_socket_rx_open(&ctx->rx_sock, GENAVB_SOCKF_RAW | GENAVB_SOCKF_NONBLOCK, &rx_params);
+    flags = GENAVB_SOCKF_RAW | GENAVB_SOCKF_NONBLOCK | GENAVB_SOCKF_ZEROCOPY;
+
+    rc = genavbtsn_eth_init_rx(ctx);
+    if (rc)
+        goto err_rx_init;
+
+    rc = genavb_socket_rx_open(&ctx->rx_sock, flags, &rx_params);
     if (rc != GENAVB_SUCCESS) {
         rc = -EIO;
         goto err_rx_open;
@@ -239,6 +278,9 @@ err_rx_callback:
     genavb_socket_rx_close(ctx->rx_sock);
     ctx->rx_sock = NULL;
 err_rx_open:
+    k_free(ctx->rx_iov);
+    ctx->rx_iov = NULL;
+err_rx_init:
     genavb_socket_tx_close(ctx->tx_sock);
     ctx->tx_sock = NULL;
 exit:
@@ -254,6 +296,11 @@ static int genavbtsn_eth_stop(const struct device *dev)
         goto exit;
 
     ctx->started = false;
+
+    if (ctx->rx_iov) {
+        k_free(ctx->rx_iov);
+        ctx->rx_iov = NULL;
+    }
 
     genavb_socket_rx_close(ctx->rx_sock);
     ctx->rx_sock = NULL;
