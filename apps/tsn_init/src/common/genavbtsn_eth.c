@@ -52,7 +52,7 @@ struct ethernetif_ctx {
     struct net_stats_eth stats;
 #endif
 
-    uint8_t tx_buf[PKT_MAX_LEN];
+    struct genavb_iovec *tx_iov;
     struct genavb_iovec *rx_iov;
     unsigned int rx_n;
 };
@@ -129,6 +129,25 @@ static int genavbtsn_eth_init_rx(struct ethernetif_ctx *ctx)
     }
 
     memset(ctx->rx_iov, 0, rx_alloc_size);
+
+exit:
+    return rc;
+}
+
+static int genavbtsn_eth_init_tx(struct ethernetif_ctx *ctx)
+{
+    unsigned int tx_alloc_size;
+    int rc = 0;
+
+    tx_alloc_size = sizeof(struct genavb_iovec);
+    ctx->tx_iov = k_malloc(tx_alloc_size);
+    if (!ctx->tx_iov) {
+        printk("Failed to allocate TX buffer");
+        rc = -ENOMEM;
+        goto exit;
+    }
+
+    memset(ctx->tx_iov, 0, tx_alloc_size);
 
 exit:
     return rc;
@@ -240,10 +259,16 @@ static int genavbtsn_eth_start(const struct device *dev)
         goto exit;
     }
 
-    rc = genavb_socket_tx_open(&ctx->tx_sock, GENAVB_SOCKF_RAW, &tx_params);
+    flags = GENAVB_SOCKF_RAW | GENAVB_SOCKF_ZEROCOPY;
+
+    rc = genavbtsn_eth_init_tx(ctx);
+    if (rc)
+        goto exit;
+
+    rc = genavb_socket_tx_open(&ctx->tx_sock, flags, &tx_params);
     if (rc != GENAVB_SUCCESS) {
         rc = -EIO;
-        goto exit;
+        goto err_tx_open;
     }
 
     flags = GENAVB_SOCKF_RAW | GENAVB_SOCKF_NONBLOCK | GENAVB_SOCKF_ZEROCOPY;
@@ -283,6 +308,9 @@ err_rx_open:
 err_rx_init:
     genavb_socket_tx_close(ctx->tx_sock);
     ctx->tx_sock = NULL;
+err_tx_open:
+    k_free(ctx->tx_iov);
+    ctx->tx_iov = NULL;
 exit:
     return rc;
 }
@@ -304,6 +332,11 @@ static int genavbtsn_eth_stop(const struct device *dev)
 
     genavb_socket_rx_close(ctx->rx_sock);
     ctx->rx_sock = NULL;
+
+    if (ctx->tx_iov) {
+        k_free(ctx->tx_iov);
+        ctx->tx_iov = NULL;
+    }
 
     genavb_socket_tx_close(ctx->tx_sock);
     ctx->tx_sock = NULL;
@@ -384,17 +417,31 @@ static int genavbtsn_eth_send(const struct device *dev, struct net_pkt *pkt)
         goto exit;
     }
 
-    rc = net_pkt_read(pkt, ctx->tx_buf, len);
+    ctx->tx_iov->iov_len = len;
+
+    rc = genavb_socket_tx_alloc(ctx->tx_sock, &ctx->tx_iov->iov_base, 1, ctx->tx_iov->iov_len);
+    if (rc != 1) {
+        rc = -ENOMEM;
+        goto err_alloc;
+    }
+
+    rc = net_pkt_read(pkt, ctx->tx_iov->iov_base, ctx->tx_iov->iov_len);
     if (rc)
         goto exit;
 
-    rc = genavb_socket_tx(ctx->tx_sock, (void *)ctx->tx_buf, len);
-    if (rc != GENAVB_SUCCESS)
+    rc = genavb_socket_tx_send_iov(ctx->tx_sock, ctx->tx_iov, NULL, 1);
+    if (rc <= 0) {
         rc = -EIO;
-    else
+    } else {
         rc = 0;
+        goto out;
+    }
 
 exit:
+    genavb_socket_tx_free(&ctx->tx_iov->iov_base, 1);
+    ctx->tx_iov->iov_base = NULL;
+err_alloc:
+out:
     return rc;
 }
 
