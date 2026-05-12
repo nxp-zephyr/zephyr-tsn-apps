@@ -6,6 +6,9 @@ set(GenAVBBuildPath "${CMAKE_CURRENT_BINARY_DIR}/gen_avb_build")
 set(MCUX_SDK "${ZEPHYR_BASE}/../modules/hal/nxp/mcux/mcux-sdk-ng")
 set(RTOS_DIR "${RTOS_ABSTRACTION_LAYER_DIR}")
 
+# Select all sections except .text.init and .text.exit
+set(SECTION_F_INIT_EXIT "^(?!\\.text\\.(init|exit)$).*")
+
 if(CONFIG_BOARD_MIMXRT1180_EVK_MIMXRT1189_CM33)
   set(TARGET "zephyr_rt1189_cm33")
   set(CONFIG "hybrid_tsn_basic")
@@ -15,7 +18,7 @@ if(CONFIG_CODE_DATA_RELOCATION)
   # Exclude the relatively large netc_sw_drivers variable to save TCM space.
   zephyr_code_relocate(FILES ${ZEPHYR_BASE}/../gen_avb/rtos/net_port_netc_sw.c FILTER "^\\.bss\\.(?!netc_sw_drivers$).*" LOCATION ITCM1_BSS_DATA)
 
-  zephyr_code_relocate(FILES ${ZEPHYR_BASE}/../gen_avb/rtos/net_port_enetc_ep.c LOCATION ITCM_TEXT_RODATA)
+  zephyr_code_relocate(FILES ${ZEPHYR_BASE}/../gen_avb/rtos/net_port_enetc_ep.c FILTER ${SECTION_F_INIT_EXIT} LOCATION ITCM_TEXT_RODATA)
   zephyr_code_relocate(FILES ${ZEPHYR_BASE}/../gen_avb/rtos/net_port_enetc_ep.c LOCATION ITCM1_BSS_DATA)
 endif()
 else()
@@ -53,7 +56,8 @@ if(CONFIG_CODE_DATA_RELOCATION)
   endif()
 
   foreach(genavbtsn_lib IN LISTS genavbtsn_libs)
-    zephyr_code_relocate(LIBRARY ${genavbtsn_lib} LOCATION RAM NOKEEP)
+    # Place GenAVB/TSN in ocram except for init and exit functions
+    zephyr_code_relocate(LIBRARY ${genavbtsn_lib} FILTER ${SECTION_F_INIT_EXIT} LOCATION RAM NOKEEP)
   endforeach()
 
   # Place RTOS network buffer heap (NOINIT section) in DTCM non-cacheable memory.
