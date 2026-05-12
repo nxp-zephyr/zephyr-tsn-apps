@@ -8,19 +8,35 @@
 #include "genavb_shell.h"
 #include "rtos_apps/shell/frer.h"
 
-SHELL_STATIC_SUBCMD_SET_CREATE(genavb_cmd_frer,
-    SHELL_CMD(seqg_update, NULL, CMD_SEQG_UPDATE_HELP, &cmd_seqg_update),
-    SHELL_CMD(seqg_delete, NULL, CMD_SEQG_DELETE_HELP, &cmd_seqg_delete),
-    SHELL_CMD(seqg_read, NULL, CMD_SEQG_READ_HELP, &cmd_seqg_read),
-    SHELL_CMD(seqr_update, NULL, CMD_SEQR_UPDATE_HELP, &cmd_seqr_update),
-    SHELL_CMD(seqr_delete, NULL, CMD_SEQR_DELETE_HELP, &cmd_seqr_delete),
-    SHELL_CMD(seqr_read, NULL, CMD_SEQR_READ_HELP, &cmd_seqr_read),
-    SHELL_CMD(seqi_update, NULL, CMD_SEQI_UPDATE_HELP, &cmd_seqi_update),
-    SHELL_CMD(seqi_delete, NULL, CMD_SEQI_DELETE_HELP, &cmd_seqi_delete),
-    SHELL_CMD(seqi_read, NULL, CMD_SEQI_READ_HELP, &cmd_seqi_read),
+SHELL_STATIC_SUBCMD_SET_CREATE(genavb_cmd_seqg,
+    SHELL_CMD(update, NULL, CMD_SEQG_UPDATE_HELP, &cmd_seqg_update),
+    SHELL_CMD(delete, NULL, CMD_SEQG_DELETE_HELP, &cmd_seqg_delete),
+    SHELL_CMD(read, NULL, CMD_SEQG_READ_HELP, &cmd_seqg_read),
     SHELL_SUBCMD_SET_END
 );
 
-SHELL_SUBCMD_ADD((genavb), frer, &genavb_cmd_frer,
-                 "Frame Replication and Elimination for Reliability (FRER) commands",
+SHELL_STATIC_SUBCMD_SET_CREATE(genavb_cmd_seqr,
+    SHELL_CMD(update, NULL, CMD_SEQR_UPDATE_HELP, &cmd_seqr_update),
+    SHELL_CMD(delete, NULL, CMD_SEQR_DELETE_HELP, &cmd_seqr_delete),
+    SHELL_CMD(read, NULL, CMD_SEQR_READ_HELP, &cmd_seqr_read),
+    SHELL_SUBCMD_SET_END
+);
+
+SHELL_STATIC_SUBCMD_SET_CREATE(genavb_cmd_seqi,
+    SHELL_CMD(update, NULL, CMD_SEQI_UPDATE_HELP, &cmd_seqi_update),
+    SHELL_CMD(delete, NULL, CMD_SEQI_DELETE_HELP, &cmd_seqi_delete),
+    SHELL_CMD(read, NULL, CMD_SEQI_READ_HELP, &cmd_seqi_read),
+    SHELL_SUBCMD_SET_END
+);
+
+SHELL_SUBCMD_ADD((genavb), seqg, &genavb_cmd_seqg,
+                 "Sequence Generation, Frame Replication and Elimination for Reliability (FRER) commands",
+                 cmd_genavb_default, 1, 0);
+
+SHELL_SUBCMD_ADD((genavb), seqr, &genavb_cmd_seqr,
+                 "Sequence Recovery, Frame Replication and Elimination for Reliability (FRER) commands",
+                 cmd_genavb_default, 1, 0);
+
+SHELL_SUBCMD_ADD((genavb), seqi, &genavb_cmd_seqi,
+                 "Sequence Identification, Frame Replication and Elimination for Reliability (FRER) commands",
                  cmd_genavb_default, 1, 0);
