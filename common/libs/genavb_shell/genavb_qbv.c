@@ -5,7 +5,7 @@
  */
 
 #ifdef CONFIG_APP_QBV
-#include "shell_config.h"
+#include <zephyr/shell/shell.h>
 #include "genavb_shell.h"
 #include "rtos_apps/shell/qbv.h"
 

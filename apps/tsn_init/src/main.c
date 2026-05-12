@@ -10,6 +10,8 @@
 
 #include "gavb_stack.h"
 #include "board.h"
+
+#include <zephyr/shell/shell.h>
 #include "genavb_shell.h"
 
 #define TSN_INIT_STACK_SIZE 4096

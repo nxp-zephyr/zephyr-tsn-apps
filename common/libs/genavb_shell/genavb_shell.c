@@ -5,11 +5,11 @@
  */
 
 #include <zephyr/kernel.h>
+#include <zephyr/shell/shell.h>
 #include <zephyr/shell/shell_uart.h>
 
 #include "rtos_apps/shell/port_stats.h"
 #include "rtos_apps/shell/shell.h"
-#include "shell_config.h"
 #include "genavb_shell.h"
 
 #include "rtos_apps/shell/fdb.h"

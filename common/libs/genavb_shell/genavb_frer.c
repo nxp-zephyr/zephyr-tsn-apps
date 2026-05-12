@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-#include "shell_config.h"
+#include <zephyr/shell/shell.h>
 #include "genavb_shell.h"
 #include "rtos_apps/shell/frer.h"
 
