@@ -10,6 +10,7 @@ set(CommonPath "${AppRootPath}/../../common")
 list(APPEND EXTRA_CONF_FILE
   "${CommonPath}/configs/base.conf"
   "${CommonPath}/configs/logging.conf"
+  "${CommonPath}/configs/fs.conf"
   "${CommonPath}/configs/net.conf"
   "${CommonPath}/configs/runtime-stats.conf"
   "${CommonPath}/configs/shell.conf"
