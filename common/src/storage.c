@@ -5,27 +5,35 @@
  */
 
 #include <stddef.h>
-#include <stdint.h>
+#include <string.h>
+
+#include <zephyr/logging/log.h>
+
+#include <zephyr/fs/fs.h>
+#include <zephyr/fs/littlefs.h>
 
 #include "rtos_apps/storage.h"
 
-#ifdef CONFIG_APP_STORAGE
-
 #include "genavb/helpers.h"
 
-#include "rtos_apps/shell/common.h"
-#include "common.h"
-#include "flexspi_ops.h"
-#include "lfs.h"
-#include "shell.h"
 #include "shell_config.h"
-#include <stdio.h>
-#include <errno.h>
 
-#include "lfs.h"
+LOG_MODULE_REGISTER(storage);
 
+/* Mount configuration */
+#define PARTITION_NODE DT_NODELABEL(lfs1)
+
+#if DT_NODE_EXISTS(PARTITION_NODE)
+FS_FSTAB_DECLARE_ENTRY(PARTITION_NODE);
+#else
+#error "partition node does not exist"
+#endif
+
+static struct fs_mount_t *mountpoint = &FS_FSTAB_ENTRY(PARTITION_NODE);
+
+/* Storage context structure */
 struct storage_ctx {
-    lfs_t lfs;
+    struct fs_mount_t *mount;
     void *shell;
 };
 
@@ -34,11 +42,9 @@ static char current_dir[MAX_PWD_LENGTH] = "/";
 static char old_dir[MAX_PWD_LENGTH] = "/";
 static char absolute_path[MAX_PATH_LENGTH];
 
-extern int lfs_get_default_config(const struct lfs_config **lfsc);
-
 void *storage_get_lfs(void)
 {
-    return &storage.lfs;
+    return mountpoint;
 }
 
 static void canonical_path(void *shell, char *path)
@@ -117,31 +123,30 @@ static int get_absolute_path(const char *pwd, const char *path, char *absolute_p
 
 
 /* get nth dir/file from dirname */
-static int storage_get(const char *dirname, unsigned int n, struct lfs_info *info)
+static int storage_get(const char *dirname, unsigned int n, struct fs_dirent *info)
 {
     void *shell = storage.shell;
-    lfs_t *lfs = &storage.lfs;
-    lfs_dir_t dir;
+    struct fs_dir_t dir;
+    unsigned int count = 0;
     int rc = -1;
 
-    if (lfs_dir_open(lfs, &dir, dirname) < 0) {
+    fs_dir_t_init(&dir);
+
+    if (fs_opendir(&dir, dirname) < 0) {
         goto err;
     }
 
-    /* offset 2 for '.' and '..' */
-    if (lfs_dir_seek(lfs, &dir, n + 2) < 0) {
-        goto err_close;
+    while (fs_readdir(&dir, info) == 0 && info->name[0] != 0) {
+        if (count == n) {
+            rc = 0;
+            break;
+        }
+        count++;
     }
 
-    if (lfs_dir_read(lfs, &dir, info) > 0) {
-        rc = 0;
-    }
-
-err_close:
-    if (lfs_dir_close(lfs, &dir) < 0) {
-        shell_printf(shell, "lfs_dir_close failed: %d\n");
+    if (fs_closedir(&dir) < 0) {
+        shell_printf(shell, "fs_closedir failed\n");
         rc = -1;
-        goto err;
     }
 
 err:
@@ -150,20 +155,20 @@ err:
 
 int storage_get_dir(const char *dirname, unsigned int n, char *subdirname, unsigned int len)
 {
-    struct lfs_info info;
+    struct fs_dirent info;
     int rc = -1;
 
     rc = storage_get(dirname, n, &info);
     if (rc < 0)
         goto err;
 
-    if (info.type == LFS_TYPE_DIR) {
+    if (info.type == FS_DIR_ENTRY_DIR) {
         if ((strlen(info.name) + 1) > len) {
             rc = -1;
             goto err;
         }
 
-        memcpy(subdirname, &info.name, strlen(info.name) + 1);
+        memcpy(subdirname, info.name, strlen(info.name) + 1);
     } else {
         rc = -1;
         goto err;
@@ -178,20 +183,20 @@ err:
 
 int storage_get_file(const char *dirname, unsigned int n, char *filename, unsigned int len)
 {
-    struct lfs_info info;
+    struct fs_dirent info;
     int rc = -1;
 
     rc = storage_get(dirname, n, &info);
     if (rc < 0)
         goto err;
 
-    if (info.type == LFS_TYPE_REG) {
+    if (info.type == FS_DIR_ENTRY_FILE) {
         if ((strlen(info.name) + 1) > len) {
             rc = -1;
             goto err;
         }
 
-        memcpy(filename, &info.name, strlen(info.name) + 1);
+        memcpy(filename, info.name, strlen(info.name) + 1);
     } else {
         rc = -1;
         goto err;
@@ -215,10 +220,10 @@ int storage_pwd(void)
 
 int storage_cd(const char *dir, bool quiet)
 {
-    lfs_t *lfs = &storage.lfs;
-    struct lfs_info info;
+    struct fs_dirent info;
     void *shell = storage.shell;
     int len;
+    int rc;
 
     if (!strcmp(dir, "-"))
         dir = old_dir;
@@ -228,14 +233,15 @@ int storage_cd(const char *dir, bool quiet)
 
     canonical_path(shell, absolute_path);
 
-    if (lfs_stat(lfs, absolute_path, &info) < 0) {
+    rc = fs_stat(absolute_path, &info);
+    if (rc < 0) {
         if (!quiet)
             shell_printf(shell, "directory %s doesn't exist\n", absolute_path);
 
         goto err;
     }
 
-    if (info.type != LFS_TYPE_DIR) {
+    if (info.type != FS_DIR_ENTRY_DIR) {
         if (!quiet)
             shell_printf(shell, "directory %s not a directory\n", absolute_path);
 
@@ -255,42 +261,46 @@ err:
     return -1;
 }
 
-static void ls_file(struct lfs_info *info)
+static void ls_file(struct fs_dirent *info)
 {
     void *shell = storage.shell;
 
-    shell_printf(shell, "%8d %s\r\n", info->size, info->name);
+    shell_printf(shell, "%8zu %s\r\n", info->size, info->name);
 }
 
-static int ls_dir(lfs_t *lfs, const char *dirname)
+static int ls_dir(const char *dirname)
 {
     void *shell = storage.shell;
-    struct lfs_info info;
-    lfs_dir_t dir;
+    struct fs_dirent info;
+    struct fs_dir_t dir;
     int rc;
 
-    rc = lfs_dir_open(lfs, &dir, dirname);
+    fs_dir_t_init(&dir);
+
+    rc = fs_opendir(&dir, dirname);
     if (rc < 0) {
-        shell_printf(shell, "lfs_dir_open(%s) failed: %d\n", dirname, rc);
+        shell_printf(shell, "fs_opendir(%s) failed: %d\n", dirname, rc);
         goto err;
     }
 
     /* iterate until end of directory */
-    while (lfs_dir_read(lfs, &dir, &info) > 0) {
-        if (info.type == LFS_TYPE_REG) {
+    while (fs_readdir(&dir, &info) == 0 && info.name[0] != 0) {
+        if (info.type == FS_DIR_ENTRY_FILE) {
             ls_file(&info);
-        } else if (info.type == LFS_TYPE_DIR) {
-            shell_printf(shell, "%     DIR %s\r\n", info.name);
+        } else if (info.type == FS_DIR_ENTRY_DIR) {
+            shell_printf(shell, "     DIR %s\r\n", info.name);
         } else {
-            shell_printf(shell, "%???\r\n");
+            shell_printf(shell, "     ??? %s\r\n", info.name);
         }
     }
 
-    rc = lfs_dir_close(lfs, &dir);
+    rc = fs_closedir(&dir);
     if (rc < 0) {
-        shell_printf(shell, "lfs_dir_close(%s) failed: %d\n", dirname, rc);
+        shell_printf(shell, "fs_closedir(%s) failed: %d\n", dirname, rc);
         goto err;
     }
+
+    return 0;
 
 err:
     return -1;
@@ -299,23 +309,22 @@ err:
 int storage_ls(const char *name)
 {
     void *shell = storage.shell;
-    lfs_t *lfs = &storage.lfs;
-    struct lfs_info info;
+    struct fs_dirent info;
     int rc;
 
     if (get_absolute_path(current_dir, name, absolute_path, MAX_PATH_LENGTH) < 0)
         goto err;
 
-    rc = lfs_stat(lfs, absolute_path, &info);
+    rc = fs_stat(absolute_path, &info);
     if (rc < 0) {
-        shell_printf(shell, "lfs_stat(%s) failed: %d\n", absolute_path, rc);
+        shell_printf(shell, "fs_stat(%s) failed: %d\n", absolute_path, rc);
         goto err;
     }
 
-    if (info.type == LFS_TYPE_REG) {
+    if (info.type == FS_DIR_ENTRY_FILE) {
         ls_file(&info);
-    } else if (info.type == LFS_TYPE_DIR) {
-        if (ls_dir(lfs, absolute_path) < 0)
+    } else if (info.type == FS_DIR_ENTRY_DIR) {
+        if (ls_dir(absolute_path) < 0)
             goto err;
     }
 
@@ -325,60 +334,62 @@ err:
     return -1;
 }
 
-static int rm_file(lfs_t *lfs, const char *filename)
+static int rm_file(const char *filename)
 {
     void *shell = storage.shell;
     int rc;
 
-    rc = lfs_remove(lfs, filename);
+    rc = fs_unlink(filename);
     if (rc < 0)
-        shell_printf(shell, "lfs_remove(%s) failed: %d\n", filename, rc);
+        shell_printf(shell, "fs_unlink(%s) failed: %d\n", filename, rc);
 
     return rc;
 }
 
-static int rm_dir(lfs_t *lfs, char *dirname, unsigned int off, unsigned int end, struct lfs_info *info)
+static int rm_dir(char *dirname, unsigned int off, unsigned int end, struct fs_dirent *info)
 {
     void *shell = storage.shell;
-    lfs_dir_t dir;
+    struct fs_dir_t dir;
     unsigned int len;
     int rc;
 
-    rc = lfs_dir_open(lfs, &dir, dirname);
+    fs_dir_t_init(&dir);
+
+    rc = fs_opendir(&dir, dirname);
     if (rc < 0) {
-        shell_printf(shell, "lfs_dir_open(%s) failed: %d\n", dirname, rc);
+        shell_printf(shell, "fs_opendir(%s) failed: %d\n", dirname, rc);
         goto err;
     }
 
     /* iterate until end of directory */
-    while (lfs_dir_read(lfs, &dir, info) > 0) {
+    while (fs_readdir(&dir, info) == 0 && info->name[0] != 0) {
         len = h_snprintf_strict(dirname + off, end - off, "/%s", info->name);
-        if (len == -1) {
+        if (len >= (end - off)) {
             shell_printf(shell, "directory tree (%s/%s) too deep\n", dirname, info->name);
             goto err_close;
         }
 
-        if (info->type == LFS_TYPE_REG) {
-            rm_file(lfs, dirname);
-        } else if ((info->type == LFS_TYPE_DIR) &&
-                   strcmp(info->name, ".") &&
-                   strcmp(info->name, "..")) {
-            rm_dir(lfs, dirname, off + len, end, info);
+        if (info->type == FS_DIR_ENTRY_FILE) {
+            rm_file(dirname);
+        } else if (info->type == FS_DIR_ENTRY_DIR) {
+            rm_dir(dirname, off + len, end, info);
         }
     }
 
     dirname[off] = '\0';
-    if (rm_file(lfs, dirname) < 0)
+    if (rm_file(dirname) < 0)
         goto err_close;
 
-    rc = lfs_dir_close(lfs, &dir);
+    rc = fs_closedir(&dir);
     if (rc < 0) {
-        shell_printf(shell, "lfs_dir_close(%s) failed: %d\n", dirname, rc);
+        shell_printf(shell, "fs_closedir(%s) failed: %d\n", dirname, rc);
         goto err;
     }
 
+    return rc;
+
 err_close:
-    lfs_dir_close(lfs, &dir);
+    fs_closedir(&dir);
 
 err:
     return rc;
@@ -387,28 +398,27 @@ err:
 int storage_rm(const char *filename, bool recursive, bool force)
 {
     void *shell = storage.shell;
-    lfs_t *lfs = &storage.lfs;
-    struct lfs_info info;
+    struct fs_dirent info;
     int rc;
 
     if (get_absolute_path(current_dir, filename, absolute_path, MAX_PATH_LENGTH) < 0)
         goto err;
 
-    rc = lfs_stat(lfs, absolute_path, &info);
+    rc = fs_stat(absolute_path, &info);
     if (rc < 0) {
         if (!force) {
-            shell_printf(shell, "lfs_stat(%s) failed: %d\n", absolute_path);
+            shell_printf(shell, "fs_stat(%s) failed: %d\n", absolute_path, rc);
             goto err;
         }
 
         goto out;
     }
 
-    if ((info.type == LFS_TYPE_REG) || !recursive) {
-        if (rm_file(lfs, absolute_path) < 0)
+    if ((info.type == FS_DIR_ENTRY_FILE) || !recursive) {
+        if (rm_file(absolute_path) < 0)
             goto err;
-    } else if (info.type == LFS_TYPE_DIR) {
-        if (rm_dir(lfs, absolute_path, strlen(absolute_path), MAX_PATH_LENGTH, &info) < 0)
+    } else if (info.type == FS_DIR_ENTRY_DIR) {
+        if (rm_dir(absolute_path, strlen(absolute_path), MAX_PATH_LENGTH, &info) < 0)
             goto err;
     }
 
@@ -421,56 +431,54 @@ err:
 
 int storage_cat(const char *filename)
 {
-    lfs_t *lfs = &storage.lfs;
     void *shell = storage.shell;
-    lfs_file_t file;
+    struct fs_file_t file;
     char buf[MAX_FILE_SIZE + 1];
     int rc;
 
     if (get_absolute_path(current_dir, filename, absolute_path, MAX_PATH_LENGTH) < 0)
         goto err_path;
 
-    rc = lfs_file_open(lfs, &file, absolute_path, 0);
+    fs_file_t_init(&file);
+
+    rc = fs_open(&file, absolute_path, FS_O_READ);
     if (rc < 0) {
-        shell_printf(shell, "lfs_file_open(%s) failed: %d\n", absolute_path, rc);
+        shell_printf(shell, "fs_open(%s) failed: %d\n", absolute_path, rc);
         goto err_open;
     }
 
     while (1) {
-        rc = lfs_file_read(lfs, &file, buf, MAX_FILE_SIZE);
+        rc = fs_read(&file, buf, MAX_FILE_SIZE);
         if (rc <= 0) {
             if (!rc)
                 goto done;
 
-            shell_printf(shell, "lfs_file_read() failed: %d\n", rc);
+            shell_printf(shell, "fs_read() failed: %d\n", rc);
             goto err_read;
         }
 
         buf[rc] = '\0';
-
         shell_printf(shell, "%s", buf);
     }
 
 done:
     shell_printf(shell, "\n");
-
-    lfs_file_close(lfs, &file);
-
-    return rc;
+    fs_close(&file);
+    return 0;
 
 err_read:
-    lfs_file_close(lfs, &file);
+    fs_close(&file);
 
 err_open:
 err_path:
     return -1;
 }
 
-static int storage_mkdir_p(lfs_t *lfs, char *dirname)
+static int storage_mkdir_p(char *dirname)
 {
     char partial_path[MAX_PWD_LENGTH] = {0};
     void *shell = storage.shell;
-    struct lfs_info info;
+    struct fs_dirent info;
     char *dir;
     int rc, off = 0;
 
@@ -479,27 +487,27 @@ static int storage_mkdir_p(lfs_t *lfs, char *dirname)
     dir = strtok(dirname, "/");
     while (dir) {
         rc = h_snprintf_strict(partial_path + off, MAX_PWD_LENGTH - off, "/%s", dir);
-        if (rc < 0)
+        if (rc < 0 || rc >= (MAX_PWD_LENGTH - off))
             goto err;
 
         off += rc;
 
-        rc = lfs_mkdir(lfs, partial_path);
+        rc = fs_mkdir(partial_path);
         if (rc < 0) {
-            if (rc == LFS_ERR_EXIST) {
-                if (lfs_stat(lfs, partial_path, &info) == 0) {
+            if (rc == -EEXIST) {
+                if (fs_stat(partial_path, &info) == 0) {
                     /* file or dir exists */
-                    if (info.type == LFS_TYPE_REG) {
+                    if (info.type == FS_DIR_ENTRY_FILE) {
                         /* file -> error */
-                        shell_printf(shell, "lfs_mkdir(%s) failed: %d\n", partial_path, rc);
+                        shell_printf(shell, "fs_mkdir(%s) failed: file exists\n", partial_path);
                         goto err;
-                    } else if (info.type == LFS_TYPE_DIR) {
+                    } else if (info.type == FS_DIR_ENTRY_DIR) {
                         /* directory -> continue */
                         goto next;
                     }
                 }
             } else {
-                shell_printf(shell, "lfs_mkdir(%s) failed: %d\n", partial_path, rc);
+                shell_printf(shell, "fs_mkdir(%s) failed: %d\n", partial_path, rc);
                 goto err;
             }
         }
@@ -515,7 +523,6 @@ err:
 
 int storage_mkdir(const char *dirname, bool parent)
 {
-    lfs_t *lfs = &storage.lfs;
     void *shell = storage.shell;
     int rc = 0;
 
@@ -525,11 +532,11 @@ int storage_mkdir(const char *dirname, bool parent)
     }
 
     if (parent) {
-        rc = storage_mkdir_p(lfs, absolute_path);
+        rc = storage_mkdir_p(absolute_path);
     } else {
-        rc = lfs_mkdir(lfs, absolute_path);
+        rc = fs_mkdir(absolute_path);
         if (rc < 0)
-            shell_printf(shell, "lfs_mkdir(%s) failed: %d\n", absolute_path, rc);
+            shell_printf(shell, "fs_mkdir(%s) failed: %d\n", absolute_path, rc);
     }
 
 err_path:
@@ -538,31 +545,31 @@ err_path:
 
 int storage_read(const char *filename, char *buf, unsigned int len)
 {
-    lfs_t *lfs = &storage.lfs;
-    lfs_file_t file;
     void *shell = storage.shell;
+    struct fs_file_t file;
     int rc;
 
     if (get_absolute_path(current_dir, filename, absolute_path, MAX_PATH_LENGTH) < 0)
         goto err_path;
 
-    rc = lfs_file_open(lfs, &file, absolute_path, 0);
+    fs_file_t_init(&file);
+
+    rc = fs_open(&file, absolute_path, FS_O_READ);
     if (rc < 0) {
         goto err_open;
     }
 
-    rc = lfs_file_read(lfs, &file, buf, len);
+    rc = fs_read(&file, buf, len);
     if (rc < 0) {
-        shell_printf(shell, "lfs_file_read() failed: %d\n", rc);
+        shell_printf(shell, "fs_read() failed: %d\n", rc);
         goto err_read;
     }
 
-    lfs_file_close(lfs, &file);
-
+    fs_close(&file);
     return rc;
 
 err_read:
-    lfs_file_close(lfs, &file);
+    fs_close(&file);
 
 err_open:
 err_path:
@@ -571,32 +578,32 @@ err_path:
 
 int storage_write(const char *filename, const char *buf, unsigned int len)
 {
-    lfs_t *lfs = &storage.lfs;
-    lfs_file_t file;
     void *shell = storage.shell;
+    struct fs_file_t file;
     int rc;
 
     if (get_absolute_path(current_dir, filename, absolute_path, MAX_PATH_LENGTH) < 0)
         goto err_path;
 
-    rc = lfs_file_open(lfs, &file, absolute_path, LFS_O_CREAT);
+    fs_file_t_init(&file);
+
+    rc = fs_open(&file, absolute_path, FS_O_CREATE | FS_O_WRITE | FS_O_TRUNC);
     if (rc < 0) {
-         shell_printf(shell, "lfs_file_open(%s) failed: %d\n", absolute_path, rc);
+         shell_printf(shell, "fs_open(%s) failed: %d\n", absolute_path, rc);
          goto err_open;
     }
 
-    rc = lfs_file_write(lfs, &file, buf, len);
+    rc = fs_write(&file, buf, len);
     if (rc < 0) {
-        shell_printf(shell, "lfs_file_write(%s) failed: %d\n", absolute_path, rc);
+        shell_printf(shell, "fs_write(%s) failed: %d\n", absolute_path, rc);
         goto err_write;
     }
 
-    lfs_file_close(lfs, &file);
-
+    fs_close(&file);
     return 0;
 
 err_write:
-    lfs_file_close(lfs, &file);
+    fs_close(&file);
 
 err_open:
 err_path:
@@ -605,44 +612,27 @@ err_path:
 
 int storage_init(void)
 {
-     lfs_t *lfs = &storage.lfs;
-     const struct lfs_config *config;
-     void *shell = NULL;
-     int rc;
+    storage.mount = mountpoint;
 
-     storage.shell = shell;
-
-     flexspi_init();
-
-     lfs_get_default_config(&config);
-
-#if 0
-    shell_printf(shell, "Formatting filesystem\n");
-    rc = lfs_format(lfs, config);
-    if (rc < 0) {
-        shell_printf(shell, "lfs_format() failed: %d\n", rc);
+    /* Check if auto-mounted */
+#if !(FSTAB_ENTRY_DT_MOUNT_FLAGS(PARTITION_NODE) & FS_MOUNT_FLAG_AUTOMOUNT)
+    LOG_ERR("Filesystem should be automounted");
+    goto err;
+#else
+    if (mountpoint != NULL && mountpoint->fs != NULL && mountpoint->mountp_len != 0) {
+        LOG_INF("Filesystem automounted");
+    } else {
+        LOG_ERR("Filesystem automount failed (fs=NULL, mountp_len=0)");
+        goto err;
     }
+
 #endif
 
-    shell_printf(shell, "Mounting filesystem\n");
-    rc = lfs_mount(lfs, config);
-    if (rc < 0) {
-        shell_printf(shell, "lfs_mount() failed: %d\n", rc);
-        shell_printf(shell, "Formatting filesystem\n");
-
-        rc = lfs_format(lfs, config);
-        if (rc < 0) {
-             shell_printf(shell, "lfs_format() failed: %d\n", rc);
-             goto err;
-        }
-
-        shell_printf(shell, "Mounting filesystem\n");
-        rc = lfs_mount(lfs, config);
-        if (rc < 0) {
-            shell_printf(shell, "lfs_mount() failed: %d\n", rc);
-            goto err;
-        }
-    }
+    /* Set current directory to mount point */
+    strncpy(current_dir, mountpoint->mnt_point, sizeof(current_dir) - 1);
+    current_dir[sizeof(current_dir) - 1] = '\0';
+    strncpy(old_dir, current_dir, sizeof(old_dir) - 1);
+    old_dir[sizeof(old_dir) - 1] = '\0';
 
     return 0;
 
@@ -659,43 +649,6 @@ int storage_set_shell(void *shell)
 
 void storage_exit(void)
 {
-    lfs_t *lfs = &storage.lfs;
-
-    lfs_unmount(lfs);
+    fs_unmount(storage.mount);
+    storage.mount = NULL;
 }
-
-#else
-
-int storage_read_ipv4_address(const char *filename, uint8_t *addr) {return -1;}
-int storage_read_mac_address(const char *filename, uint8_t *mac) {return -1;}
-int storage_read_qbv_entry(const char *filename, uint8_t *mask, uint32_t *offset, uint8_t *state) {return -1;}
-int storage_read_uint(const char *filename, unsigned int *value) {return -1;}
-int storage_read_int(const char *filename, int *value) {return -1;}
-int storage_read_float(const char *filename, float *value) {return -1;}
-int storage_read_bool(const char *filename, bool *value) {return -1;}
-int storage_read_u8(const char *filename, uint8_t *value) {return -1;}
-int storage_read_u16(const char *filename, uint16_t *value) {return -1;}
-int storage_read_u32(const char *filename, uint32_t *value) {return -1;}
-int storage_read_u64(const char *filename, uint64_t *value) {return -1;}
-int storage_read_s8(const char *filename, int8_t *value) {return -1;}
-int storage_read_s16(const char *filename, int16_t *value) {return -1;}
-int storage_read_s32(const char *filename, int32_t *value) {return -1;}
-int storage_write_uint_hex(const char *filename, unsigned int value) {return -1;}
-int storage_write_uint(const char *filename, unsigned int value) {return -1;}
-int storage_write_u64(const char *filename, uint64_t value) {return -1;}
-int storage_pwd(void) {return -1;}
-int storage_cd(const char *filename, bool quiet) {return -1;}
-int storage_ls(const char *filename) {return -1;}
-int storage_rm(const char *filename, bool recursive, bool force) {return -1;}
-int storage_mkdir(const char *dirname, bool parent) {return -1;}
-int storage_cat(const char *filename) {return -1;}
-int storage_read(const char *filename, char *buf, unsigned int len) {return -1;}
-int storage_write(const char *filename, const char *buf, unsigned int len) {return -1;}
-int storage_init(void) {return -1;}
-int storage_set_shell(void *shell) {return -1;}
-void storage_exit(void) {return;}
-int storage_get_dir(const char *dirname, unsigned int n, char *subdirname, unsigned int len) {return -1;}
-int storage_get_file(const char *dirname, unsigned int n, char *filename, unsigned int len) {return -1;}
-void *storage_get_lfs(void) {return NULL;}
-
-#endif

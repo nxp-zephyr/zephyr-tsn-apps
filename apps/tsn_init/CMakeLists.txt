@@ -120,6 +120,12 @@ if (CONFIG_TSN_MULTICORE)
   )
 endif()
 
+if (CONFIG_APP_STORAGE)
+  target_sources(app PRIVATE
+    ${CommonPath}/src/storage.c
+  )
+endif()
+
 zephyr_include_directories(
   ${AppCommonPath}
   src/boards/${BoardDir}
