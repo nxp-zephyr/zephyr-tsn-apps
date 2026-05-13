@@ -12,6 +12,9 @@
 #include <zephyr/kernel.h>
 
 #include <zephyr/device.h>
+
+#include <zephyr/logging/log.h>
+
 #include <zephyr/net/ethernet.h>
 #include <zephyr/net/net_if.h>
 #include <zephyr/net/net_pkt.h>
@@ -24,6 +27,8 @@
 
 #include "gavb_stack.h"
 #include "system_config.h"
+
+LOG_MODULE_REGISTER(genavbtsn_eth);
 
 #define DT_DRV_COMPAT nxp_genavbtsn_eth
 
@@ -123,7 +128,7 @@ static int genavbtsn_eth_init_rx(struct ethernetif_ctx *ctx)
 
     ctx->rx_iov = k_malloc(rx_alloc_size);
     if (!ctx->rx_iov) {
-        printk("Failed to allocate RX buffer");
+        LOG_ERR("Failed to allocate RX buffer");
         rc = -ENOMEM;
         goto exit;
     }
@@ -142,7 +147,7 @@ static int genavbtsn_eth_init_tx(struct ethernetif_ctx *ctx)
     tx_alloc_size = sizeof(struct genavb_iovec);
     ctx->tx_iov = k_malloc(tx_alloc_size);
     if (!ctx->tx_iov) {
-        printk("Failed to allocate TX buffer");
+        LOG_ERR("Failed to allocate TX buffer");
         rc = -ENOMEM;
         goto exit;
     }
@@ -227,7 +232,7 @@ static void genavbtsn_eth_rx_cb(void *data)
 
     rc = genavb_socket_rx_enable_callback(ctx->rx_sock);
     if (rc != GENAVB_SUCCESS)
-        printk("genavbtsn_eth_rx_cb: genavb_socket_rx_enable_callback failed: %s\n", genavb_strerror(rc));
+        LOG_ERR("genavb_socket_rx_enable_callback failed: %s", genavb_strerror(rc));
 }
 
 static int genavbtsn_eth_start(const struct device *dev)
