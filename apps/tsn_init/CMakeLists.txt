@@ -100,10 +100,10 @@ target_sources(app PRIVATE
   src/boards/${BoardDir}/pin_mux.c
   src/common/configs.c
   src/common/gavb_stack.c
-  src/common/genavbtsn_eth.c
   src/common/system_config.c
   src/main.c
   ../../common/src/early_mem.c
+  ../../common/src/genavbtsn_eth.c
 )
 
 zephyr_include_directories(
