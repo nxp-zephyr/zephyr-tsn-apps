@@ -6,23 +6,11 @@ set(GenAVBBuildPath "${CMAKE_CURRENT_BINARY_DIR}/gen_avb_build")
 set(MCUX_SDK "${ZEPHYR_BASE}/../modules/hal/nxp/mcux/mcux-sdk-ng")
 set(RTOS_DIR "${RTOS_ABSTRACTION_LAYER_DIR}")
 
-# Select all sections except .text.init and .text.exit
-set(SECTION_F_INIT_EXIT "^(?!\\.text\\.(init|exit)$).*")
-
 if(CONFIG_BOARD_MIMXRT1180_EVK_MIMXRT1189_CM33)
   set(TARGET "zephyr_rt1189_cm33")
   set(CONFIG "hybrid_tsn_basic")
-
-if(CONFIG_CODE_DATA_RELOCATION)
-  # Partially move the NETC GenAVB/TSN driver to TCM. This guarantees that the switch and endpoint descriptors are in non cacheable memory.
-  # Exclude the relatively large netc_sw_drivers variable to save TCM space.
-  zephyr_code_relocate(FILES ${ZEPHYR_BASE}/../gen_avb/rtos/net_port_netc_sw.c FILTER "^\\.bss\\.(?!netc_sw_drivers$).*" LOCATION ITCM1_BSS_DATA)
-
-  zephyr_code_relocate(FILES ${ZEPHYR_BASE}/../gen_avb/rtos/net_port_enetc_ep.c FILTER ${SECTION_F_INIT_EXIT} LOCATION ITCM_TEXT_RODATA)
-  zephyr_code_relocate(FILES ${ZEPHYR_BASE}/../gen_avb/rtos/net_port_enetc_ep.c LOCATION ITCM1_BSS_DATA)
-endif()
 else()
-  message(ERROR "unsupported")
+  message(ERROR "Unsupported board")
 endif()
 
 set(RTOS_APPS "${CMAKE_CURRENT_LIST_DIR}/src")
@@ -50,6 +38,13 @@ target_link_libraries(${MCUX_SDK_PROJECT_NAME} PRIVATE genavb_sdk)
 target_link_libraries(${MCUX_SDK_PROJECT_NAME} PRIVATE -Wl,--end-group)
 
 if(CONFIG_CODE_DATA_RELOCATION)
+  # Partially move the NETC GenAVB/TSN driver to TCM. This guarantees that the switch and endpoint descriptors are in non cacheable memory.
+  # Exclude the relatively large netc_sw_drivers variable to save TCM space.
+  zephyr_code_relocate(FILES ${ZEPHYR_BASE}/../gen_avb/rtos/net_port_netc_sw.c FILTER ${SECTION_F_N_NETC_SW} LOCATION ITCM1_BSS_DATA)
+
+  zephyr_code_relocate(FILES ${ZEPHYR_BASE}/../gen_avb/rtos/net_port_enetc_ep.c FILTER ${SECTION_F_N_INIT_EXIT} LOCATION ITCM_TEXT_RODATA)
+  zephyr_code_relocate(FILES ${ZEPHYR_BASE}/../gen_avb/rtos/net_port_enetc_ep.c LOCATION ITCM1_BSS_DATA)
+
   get_target_property(genavbtsn_libs genavb_sdk GENAVB_SDK_LIBRARIES)
   if (NOT genavbtsn_libs)
     message(FATAL_ERROR "No GENAVB_SDK_LIBRARIES property found for genavb_sdk target ")
@@ -57,23 +52,13 @@ if(CONFIG_CODE_DATA_RELOCATION)
 
   foreach(genavbtsn_lib IN LISTS genavbtsn_libs)
     # Place GenAVB/TSN in ocram except for init and exit functions
-    zephyr_code_relocate(LIBRARY ${genavbtsn_lib} FILTER ${SECTION_F_INIT_EXIT} LOCATION RAM NOKEEP)
+    zephyr_code_relocate(LIBRARY ${genavbtsn_lib} FILTER ${SECTION_F_N_INIT_EXIT} LOCATION RAM NOKEEP)
   endforeach()
 
   # Place RTOS network buffer heap (NOINIT section) in DTCM non-cacheable memory.
   zephyr_code_relocate(FILES ${ZEPHYR_BASE}/../rtos-abstraction-layer/zephyr/rtos_net_heap.c LOCATION DTCM_DATA_BSS_NOINIT NOKEEP)
   zephyr_code_relocate(FILES ${ZEPHYR_BASE}/../rtos-abstraction-layer/zephyr/rtos_net_heap.c LOCATION ITCM_TEXT_RODATA NOKEEP)
 
-  file(GLOB_RECURSE RTOS_ABSTRACTION_SOURCES
-    ${ZEPHYR_BASE}/../rtos-abstraction-layer/zephyr/*.c
-  )
-
-  list(FILTER RTOS_ABSTRACTION_SOURCES EXCLUDE REGEX ".*/rtos_net_heap.c$")
-
-  zephyr_code_relocate(FILES
-    ${RTOS_ABSTRACTION_SOURCES}
-    LOCATION RAM
-    NOKEEP
-  )
+  zephyr_code_relocate(FILES ${RTOS_ABSTRACTION_SOURCES} LOCATION RAM NOKEEP)
 
 endif()
