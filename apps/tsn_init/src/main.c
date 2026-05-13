@@ -17,7 +17,7 @@
 #include "rtos_apps/storage.h"
 #include "zephyr/shell/shell_uart.h"
 
-#define TSN_INIT_STACK_SIZE 4096
+#define TSN_INIT_STACK_SIZE 3048
 #define TSN_INIT_STACK_PRIO (K_LOWEST_THREAD_PRIO - 4)
 
 K_THREAD_STACK_DEFINE(tsn_init_stack, TSN_INIT_STACK_SIZE);
