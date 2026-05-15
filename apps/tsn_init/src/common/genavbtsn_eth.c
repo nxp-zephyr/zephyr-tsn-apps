@@ -283,10 +283,21 @@ static int genavbtsn_eth_get_config(const struct device *dev,
                                     struct ethernet_config *config)
 {
     ARG_UNUSED(dev);
-    ARG_UNUSED(type);
-    ARG_UNUSED(config);
+    int rc = -ENOTSUP;
 
-    return -ENOTSUP;
+    switch (type) {
+    case ETHERNET_CONFIG_TYPE_RX_CHECKSUM_SUPPORT:
+        config->chksum_support = ETHERNET_CHECKSUM_SUPPORT_IPV4_HEADER |
+            ETHERNET_CHECKSUM_SUPPORT_IPV4_ICMP |
+            ETHERNET_CHECKSUM_SUPPORT_TCP |
+            ETHERNET_CHECKSUM_SUPPORT_UDP;
+        rc = 0;
+        break;
+    default:
+        break;
+    }
+
+    return rc;
 }
 
 #if defined(CONFIG_NET_STATISTICS_ETHERNET)
@@ -306,7 +317,7 @@ static enum ethernet_hw_caps genavbtsn_eth_get_capabilities(const struct device 
 {
     ARG_UNUSED(dev);
 
-    return 0;
+    return ETHERNET_HW_RX_CHKSUM_OFFLOAD;
 }
 
 static int genavbtsn_eth_send(const struct device *dev, struct net_pkt *pkt)
