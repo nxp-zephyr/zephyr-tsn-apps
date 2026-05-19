@@ -33,6 +33,13 @@ find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(tsn_init_secondary)
 set(MCUX_SDK_PROJECT_NAME app)
 
+if(NOT CONFIG_NXP_BOARD_SPECIFIC_MPU_SETTINGS)
+  if(CONFIG_SOC_MIMXRT1189_CM7)
+    zephyr_sources(${CommonPath}/soc/imxrt118x/cm7/mpu_regions.c)
+  endif()
+endif()
+
+
 SET(HAL_NXP_PATH "${ZEPHYR_BASE}/../modules/hal/nxp")
 SET(SdkRootDirPath "${HAL_NXP_PATH}/mcux/mcux-sdk-ng")
 
