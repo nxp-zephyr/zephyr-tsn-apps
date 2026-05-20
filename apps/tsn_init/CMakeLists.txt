@@ -100,6 +100,7 @@ set(RtosAppsPath "${ZEPHYR_BASE}/../rtos-apps")
 set(RTOS_APPS_TARGET app)
 include(${RtosAppsPath}/rtos_apps_log.cmake)
 include(${RtosAppsPath}/rtos_apps_shell.cmake)
+include(${RtosAppsPath}/rtos_apps_storage.cmake)
 
 target_sources(app PRIVATE
   src/boards/${BoardDir}/board.c
