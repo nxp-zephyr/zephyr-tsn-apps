@@ -24,6 +24,7 @@
 #include "genavb/error.h"
 #include "genavb/socket.h"
 #include "genavb/port.h"
+#include "genavb/qos.h"
 
 #include "gavb_stack.h"
 #include "system_config.h"
@@ -45,7 +46,7 @@ struct ethernetif_config {
 
 struct ethernetif_ctx {
     struct net_if *iface;
-    struct genavb_socket_tx *tx_sock;
+    struct genavb_socket_tx *tx_sock[QOS_PRIORITY_MAX];
     struct genavb_socket_rx *rx_sock;
     bool started;
 
@@ -254,7 +255,7 @@ static int genavbtsn_eth_start(const struct device *dev)
         },
     };
     genavb_sock_f_t flags;
-    int rc = 0;
+    int rc = 0, i;
 
     if (ctx->started)
         goto exit;
@@ -270,10 +271,13 @@ static int genavbtsn_eth_start(const struct device *dev)
     if (rc)
         goto exit;
 
-    rc = genavb_socket_tx_open(&ctx->tx_sock, flags, &tx_params);
-    if (rc != GENAVB_SUCCESS) {
-        rc = -EIO;
-        goto err_tx_open;
+    for (i = 0; i < QOS_PRIORITY_MAX; i++) {
+        tx_params.addr.priority = i;
+        rc = genavb_socket_tx_open(&ctx->tx_sock[i], flags, &tx_params);
+        if (rc != GENAVB_SUCCESS) {
+            rc = -EIO;
+            goto err_tx_open;
+        }
     }
 
     flags = GENAVB_SOCKF_RAW | GENAVB_SOCKF_NONBLOCK | GENAVB_SOCKF_ZEROCOPY;
@@ -311,9 +315,12 @@ err_rx_open:
     k_free(ctx->rx_iov);
     ctx->rx_iov = NULL;
 err_rx_init:
-    genavb_socket_tx_close(ctx->tx_sock);
-    ctx->tx_sock = NULL;
 err_tx_open:
+    for (i--; i >= 0; i--) {
+        genavb_socket_tx_close(ctx->tx_sock[i]);
+        ctx->tx_sock[i] = NULL;
+    }
+
     k_free(ctx->tx_iov);
     ctx->tx_iov = NULL;
 exit:
@@ -323,12 +330,10 @@ exit:
 static int genavbtsn_eth_stop(const struct device *dev)
 {
     struct ethernetif_ctx *ctx = (struct ethernetif_ctx *)dev->data;
-    int rc = 0;
+    int rc = 0, i;
 
     if (!ctx->started)
         goto exit;
-
-    ctx->started = false;
 
     if (ctx->rx_iov) {
         k_free(ctx->rx_iov);
@@ -343,8 +348,10 @@ static int genavbtsn_eth_stop(const struct device *dev)
         ctx->tx_iov = NULL;
     }
 
-    genavb_socket_tx_close(ctx->tx_sock);
-    ctx->tx_sock = NULL;
+    for (i = 0; i < QOS_PRIORITY_MAX; i++) {
+        genavb_socket_tx_close(ctx->tx_sock[i]);
+        ctx->tx_sock[i] = NULL;
+    }
 
     ctx->started = false;
 
@@ -408,6 +415,7 @@ static enum ethernet_hw_caps genavbtsn_eth_get_capabilities(const struct device 
 static int genavbtsn_eth_send(const struct device *dev, struct net_pkt *pkt)
 {
     struct ethernetif_ctx *ctx = (struct ethernetif_ctx *)dev->data;
+    uint8_t priority;
     size_t len;
     int rc = 0;
 
@@ -424,7 +432,11 @@ static int genavbtsn_eth_send(const struct device *dev, struct net_pkt *pkt)
 
     ctx->tx_iov->iov_len = len;
 
-    rc = genavb_socket_tx_alloc(ctx->tx_sock, &ctx->tx_iov->iov_base, 1, ctx->tx_iov->iov_len);
+    priority = net_pkt_priority(pkt);
+    if (priority >= QOS_PRIORITY_MAX)
+        priority = QOS_BEST_EFFORT_PRIORITY;
+
+    rc = genavb_socket_tx_alloc(ctx->tx_sock[priority], &ctx->tx_iov->iov_base, 1, ctx->tx_iov->iov_len);
     if (rc != 1) {
         rc = -ENOMEM;
         goto err_alloc;
@@ -434,7 +446,7 @@ static int genavbtsn_eth_send(const struct device *dev, struct net_pkt *pkt)
     if (rc)
         goto exit;
 
-    rc = genavb_socket_tx_send_iov(ctx->tx_sock, ctx->tx_iov, NULL, 1);
+    rc = genavb_socket_tx_send_iov(ctx->tx_sock[priority], ctx->tx_iov, NULL, 1);
     if (rc <= 0) {
         rc = -EIO;
     } else {
