@@ -42,6 +42,7 @@ if(CONFIG_CODE_DATA_RELOCATION)
 endif()
 
 zephyr_linker_sources(ITCM_SECTION ../../common/linker/libc_itcm.ld)
+zephyr_linker_sources(ITCM_SECTION ../../common/linker/fsl_mem_ops.ld)
 
 target_sources(app PRIVATE
   src/main.c
