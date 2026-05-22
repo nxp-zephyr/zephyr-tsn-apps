@@ -215,15 +215,6 @@ err:
     return rc;
 }
 
-int storage_pwd(void)
-{
-    void *shell = storage.shell;
-
-    shell_printf(shell, "%s\n", current_dir);
-
-    return 0;
-}
-
 int storage_cd(const char *dir, bool quiet)
 {
     struct fs_dirent info;
@@ -260,79 +251,6 @@ int storage_cd(const char *dir, bool quiet)
 
     strcpy(old_dir, current_dir);
     strcpy(current_dir, absolute_path);
-
-    return 0;
-
-err:
-    return -1;
-}
-
-static void ls_file(struct fs_dirent *info)
-{
-    void *shell = storage.shell;
-
-    shell_printf(shell, "%8zu %s\r\n", info->size, info->name);
-}
-
-static int ls_dir(const char *dirname)
-{
-    void *shell = storage.shell;
-    struct fs_dirent info;
-    struct fs_dir_t dir;
-    int rc;
-
-    fs_dir_t_init(&dir);
-
-    rc = fs_opendir(&dir, dirname);
-    if (rc < 0) {
-        shell_printf(shell, "fs_opendir(%s) failed: %d\n", dirname, rc);
-        goto err;
-    }
-
-    /* iterate until end of directory */
-    while (fs_readdir(&dir, &info) == 0 && info.name[0] != 0) {
-        if (info.type == FS_DIR_ENTRY_FILE) {
-            ls_file(&info);
-        } else if (info.type == FS_DIR_ENTRY_DIR) {
-            shell_printf(shell, "     DIR %s\r\n", info.name);
-        } else {
-            shell_printf(shell, "     ??? %s\r\n", info.name);
-        }
-    }
-
-    rc = fs_closedir(&dir);
-    if (rc < 0) {
-        shell_printf(shell, "fs_closedir(%s) failed: %d\n", dirname, rc);
-        goto err;
-    }
-
-    return 0;
-
-err:
-    return -1;
-}
-
-int storage_ls(const char *name)
-{
-    void *shell = storage.shell;
-    struct fs_dirent info;
-    int rc;
-
-    if (get_absolute_path(current_dir, name, absolute_path, MAX_PATH_LENGTH) < 0)
-        goto err;
-
-    rc = fs_stat(absolute_path, &info);
-    if (rc < 0) {
-        shell_printf(shell, "fs_stat(%s) failed: %d\n", absolute_path, rc);
-        goto err;
-    }
-
-    if (info.type == FS_DIR_ENTRY_FILE) {
-        ls_file(&info);
-    } else if (info.type == FS_DIR_ENTRY_DIR) {
-        if (ls_dir(absolute_path) < 0)
-            goto err;
-    }
 
     return 0;
 
@@ -433,51 +351,6 @@ out:
     return 0;
 
 err:
-    return -1;
-}
-
-int storage_cat(const char *filename)
-{
-    void *shell = storage.shell;
-    struct fs_file_t file;
-    char buf[MAX_FILE_SIZE + 1];
-    int rc;
-
-    if (get_absolute_path(current_dir, filename, absolute_path, MAX_PATH_LENGTH) < 0)
-        goto err_path;
-
-    fs_file_t_init(&file);
-
-    rc = fs_open(&file, absolute_path, FS_O_READ);
-    if (rc < 0) {
-        shell_printf(shell, "fs_open(%s) failed: %d\n", absolute_path, rc);
-        goto err_open;
-    }
-
-    while (1) {
-        rc = fs_read(&file, buf, MAX_FILE_SIZE);
-        if (rc <= 0) {
-            if (!rc)
-                goto done;
-
-            shell_printf(shell, "fs_read() failed: %d\n", rc);
-            goto err_read;
-        }
-
-        buf[rc] = '\0';
-        shell_printf(shell, "%s", buf);
-    }
-
-done:
-    shell_printf(shell, "\n");
-    fs_close(&file);
-    return 0;
-
-err_read:
-    fs_close(&file);
-
-err_open:
-err_path:
     return -1;
 }
 
