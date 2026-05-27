@@ -20,6 +20,10 @@
 
 LOG_MODULE_REGISTER(storage);
 
+#define MAX_FILENAME_LENGTH    32
+#define MAX_PWD_LENGTH         128
+#define MAX_PATH_LENGTH        (MAX_PWD_LENGTH + MAX_FILENAME_LENGTH)
+
 /* Mount configuration */
 #define PARTITION_NODE DT_NODELABEL(lfs1)
 
