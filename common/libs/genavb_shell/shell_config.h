@@ -15,6 +15,10 @@
 
 #include "gavb_stack.h"
 
+#if CONFIG_APP_STORAGE
+#include "storage_config.h"
+#endif
+
 #define shell_printf(sh, ...)                             \
     do {                                                  \
         if (sh)                                           \

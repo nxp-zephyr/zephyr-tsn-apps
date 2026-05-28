@@ -16,6 +16,7 @@
 
 #include "genavb/helpers.h"
 
+#include "storage_config.h"
 #include "shell_config.h"
 
 LOG_MODULE_REGISTER(storage);
@@ -23,9 +24,6 @@ LOG_MODULE_REGISTER(storage);
 #define MAX_FILENAME_LENGTH    32
 #define MAX_PWD_LENGTH         128
 #define MAX_PATH_LENGTH        (MAX_PWD_LENGTH + MAX_FILENAME_LENGTH)
-
-/* Mount configuration */
-#define PARTITION_NODE DT_NODELABEL(lfs1)
 
 #if DT_NODE_EXISTS(PARTITION_NODE)
 FS_FSTAB_DECLARE_ENTRY(PARTITION_NODE);
@@ -42,89 +40,11 @@ struct storage_ctx {
 };
 
 static struct storage_ctx storage;
-static char current_dir[MAX_PWD_LENGTH] = "/";
-static char old_dir[MAX_PWD_LENGTH] = "/";
-static char absolute_path[MAX_PATH_LENGTH];
 
 void *storage_get_lfs(void)
 {
     return mountpoint;
 }
-
-static void canonical_path(void *shell, char *path)
-{
-    char *start, *end;
-    unsigned int len;
-
-    start = path;
-
-    /* skip initial / */
-    if (start[0] == '/')
-        start++;
-
-    while (true) {
-        end = strchr(start, '/');
-
-        if (!end) {
-            len = strlen(start);
-            if (!len)
-                break;
-
-            end = start + len - 1;
-        } else {
-            len = end - start;
-        }
-
-        if ((len == 2) && !memcmp(start, "..", 2)) {
-           /* go back */
-           if (start > path + 1) {
-               start--;
-               while (start > path) {
-                   if ((start - 1)[0] == '/')
-                       break;
-                   start--;
-               }
-           }
-
-           len = strlen(end + 1);
-           memmove(start, end + 1, len + 1);
-        } else if (((len == 1) && !memcmp(start, ".", 1)) ||
-            (len == 0)) {
-           /* skip */
-           len = strlen(end + 1);
-           memmove(start, end + 1, len + 1);
-        } else {
-            /* go forward */
-            start = end + 1;
-        }
-    }
-}
-
-
-static int get_absolute_path(const char *pwd, const char *path, char *absolute_path, unsigned int len)
-{
-    unsigned int pwd_len;
-    unsigned int path_len = strlen(path);
-
-    if (path[0] == '/') {
-        if (path_len >= MAX_PATH_LENGTH)
-            return -1;
-
-        memcpy(absolute_path, path, path_len + 1);
-    } else {
-        pwd_len = strlen(pwd);
-
-        if ((pwd_len + 1 + path_len) >= MAX_PATH_LENGTH)
-            return -1;
-
-        memcpy(absolute_path, pwd, pwd_len);
-        absolute_path[pwd_len] = '/';
-        memcpy(absolute_path + pwd_len + 1, path, path_len + 1);
-    }
-
-    return 0;
-}
-
 
 /* get nth dir/file from dirname */
 static int storage_get(const char *dirname, unsigned int n, struct fs_dirent *info)
@@ -215,49 +135,6 @@ err:
     return rc;
 }
 
-int storage_cd(const char *dir, bool quiet)
-{
-    struct fs_dirent info;
-    void *shell = storage.shell;
-    int len;
-    int rc;
-
-    if (!strcmp(dir, "-"))
-        dir = old_dir;
-
-    if (get_absolute_path(current_dir, dir, absolute_path, MAX_PATH_LENGTH) < 0)
-        goto err;
-
-    canonical_path(shell, absolute_path);
-
-    rc = fs_stat(absolute_path, &info);
-    if (rc < 0) {
-        if (!quiet)
-            shell_printf(shell, "directory %s doesn't exist\n", absolute_path);
-
-        goto err;
-    }
-
-    if (info.type != FS_DIR_ENTRY_DIR) {
-        if (!quiet)
-            shell_printf(shell, "directory %s not a directory\n", absolute_path);
-
-        goto err;
-    }
-
-    len = strlen(absolute_path);
-    if (len >= MAX_PWD_LENGTH)
-        goto err;
-
-    strcpy(old_dir, current_dir);
-    strcpy(current_dir, absolute_path);
-
-    return 0;
-
-err:
-    return -1;
-}
-
 static int rm_file(const char *filename)
 {
     void *shell = storage.shell;
@@ -323,16 +200,17 @@ err:
 int storage_rm(const char *filename, bool recursive, bool force)
 {
     void *shell = storage.shell;
+    char path[MAX_PATH_LENGTH] = {0};
     struct fs_dirent info;
     int rc;
 
-    if (get_absolute_path(current_dir, filename, absolute_path, MAX_PATH_LENGTH) < 0)
+    if (h_snprintf_strict(path, MAX_PATH_LENGTH, "%s", filename) < 0)
         goto err;
 
-    rc = fs_stat(absolute_path, &info);
+    rc = fs_stat(path, &info);
     if (rc < 0) {
         if (!force) {
-            shell_printf(shell, "fs_stat(%s) failed: %d\n", absolute_path, rc);
+            shell_printf(shell, "fs_stat(%s) failed: %d\n", path, rc);
             goto err;
         }
 
@@ -340,10 +218,10 @@ int storage_rm(const char *filename, bool recursive, bool force)
     }
 
     if ((info.type == FS_DIR_ENTRY_FILE) || !recursive) {
-        if (rm_file(absolute_path) < 0)
+        if (rm_file(path) < 0)
             goto err;
     } else if (info.type == FS_DIR_ENTRY_DIR) {
-        if (rm_dir(absolute_path, strlen(absolute_path), MAX_PATH_LENGTH, &info) < 0)
+        if (rm_dir(path, strlen(path), MAX_PATH_LENGTH, &info) < 0)
             goto err;
     }
 
@@ -361,8 +239,6 @@ static int storage_mkdir_p(char *dirname)
     struct fs_dirent info;
     char *dir;
     int rc, off = 0;
-
-    canonical_path(shell, dirname);
 
     dir = strtok(dirname, "/");
     while (dir) {
@@ -404,37 +280,45 @@ err:
 int storage_mkdir(const char *dirname, bool parent)
 {
     void *shell = storage.shell;
+    char path[MAX_PATH_LENGTH] = {0};
     int rc = 0;
 
-    if (get_absolute_path(current_dir, dirname, absolute_path, MAX_PATH_LENGTH) < 0) {
+    if (h_snprintf_strict(path, MAX_PATH_LENGTH, "%s", dirname) < 0) {
         rc = -1;
-        goto err_path;
+        goto out;
     }
 
     if (parent) {
-        rc = storage_mkdir_p(absolute_path);
+        rc = storage_mkdir_p(path);
     } else {
-        rc = fs_mkdir(absolute_path);
+        rc = fs_mkdir(path);
         if (rc < 0)
-            shell_printf(shell, "fs_mkdir(%s) failed: %d\n", absolute_path, rc);
+            shell_printf(shell, "fs_mkdir(%s) failed: %d\n", path, rc);
     }
 
-err_path:
+out:
     return rc;
 }
 
-int storage_read(const char *filename, char *buf, unsigned int len)
+int storage_read(const char *dirname, const char *filename, char *buf, unsigned int len)
 {
     void *shell = storage.shell;
+    char path_buf[MAX_PATH_LENGTH] = {0};
+    const char *path;
     struct fs_file_t file;
     int rc;
 
-    if (get_absolute_path(current_dir, filename, absolute_path, MAX_PATH_LENGTH) < 0)
-        goto err_path;
+    if (dirname) {
+        if (h_snprintf_strict(path_buf, MAX_PATH_LENGTH, "%s/%s", dirname, filename) < 0)
+            return -1;
+        path = path_buf;
+    } else {
+        path = filename;
+    }
 
     fs_file_t_init(&file);
 
-    rc = fs_open(&file, absolute_path, FS_O_READ);
+    rc = fs_open(&file, path, FS_O_READ);
     if (rc < 0) {
         goto err_open;
     }
@@ -452,30 +336,36 @@ err_read:
     fs_close(&file);
 
 err_open:
-err_path:
     return -1;
 }
 
-int storage_write(const char *filename, const char *buf, unsigned int len)
+int storage_write(const char *dirname, const char *filename, const char *buf, unsigned int len)
 {
     void *shell = storage.shell;
+    const char *path;
+    char path_buf[MAX_PATH_LENGTH] = {0};
     struct fs_file_t file;
     int rc;
 
-    if (get_absolute_path(current_dir, filename, absolute_path, MAX_PATH_LENGTH) < 0)
-        goto err_path;
+    if (dirname) {
+        if (h_snprintf_strict(path_buf, MAX_PATH_LENGTH, "%s/%s", dirname, filename) < 0)
+            return -1;
+        path = path_buf;
+    } else {
+        path = filename;
+    }
 
     fs_file_t_init(&file);
 
-    rc = fs_open(&file, absolute_path, FS_O_CREATE | FS_O_WRITE | FS_O_TRUNC);
+    rc = fs_open(&file, path, FS_O_CREATE | FS_O_WRITE | FS_O_TRUNC);
     if (rc < 0) {
-         shell_printf(shell, "fs_open(%s) failed: %d\n", absolute_path, rc);
+         shell_printf(shell, "fs_open(%s) failed: %d\n", path, rc);
          goto err_open;
     }
 
     rc = fs_write(&file, buf, len);
     if (rc < 0) {
-        shell_printf(shell, "fs_write(%s) failed: %d\n", absolute_path, rc);
+        shell_printf(shell, "fs_write(%s) failed: %d\n", path, rc);
         goto err_write;
     }
 
@@ -486,7 +376,6 @@ err_write:
     fs_close(&file);
 
 err_open:
-err_path:
     return -1;
 }
 
@@ -507,12 +396,6 @@ int storage_init(void)
     }
 
 #endif
-
-    /* Set current directory to mount point */
-    strncpy(current_dir, mountpoint->mnt_point, sizeof(current_dir) - 1);
-    current_dir[sizeof(current_dir) - 1] = '\0';
-    strncpy(old_dir, current_dir, sizeof(old_dir) - 1);
-    old_dir[sizeof(old_dir) - 1] = '\0';
 
     return 0;
 
