@@ -13,14 +13,14 @@
 &memory {
 	itcm: memory@1ffe0000 {
 		compatible = "zephyr,memory-region", "nxp,imx-itcm";
-		reg = <0x1ffe0000 DT_SIZE_K(80)>;
+		reg = <0x1ffe0000 DT_SIZE_K(88)>;
 		zephyr,memory-region = "ITCM";
 		zephyr,memory-attr = <DT_MEM_ARM(ATTR_MPU_FLASH)>;
 	};
 
-	itcm1: memory@1fff4000 {
+	itcm1: memory@1fff6000 {
 		compatible = "zephyr,memory-region", "nxp,imx-itcm";
-		reg = <0x1fff4000 DT_SIZE_K(48)>;
+		reg = <0x1fff6000 DT_SIZE_K(40)>;
 		zephyr,memory-region = "ITCM1";
 		zephyr,memory-attr = <DT_MEM_ARM(ATTR_MPU_RAM_NOCACHE)>;
 	};
