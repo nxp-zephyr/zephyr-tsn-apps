@@ -6,6 +6,7 @@ cmake_minimum_required(VERSION 3.20.0)
 set(TOOLCHAIN_HAS_NEWLIB ON)
 
 set(AppRootPath ${CMAKE_CURRENT_SOURCE_DIR})
+set(AppCommonPath "${AppRootPath}/common")
 set(CommonPath "${AppRootPath}/../../common")
 
 # Common configuration fragment files
@@ -104,9 +105,9 @@ target_sources(app PRIVATE
   src/boards/${BoardDir}/board.c
   src/boards/${BoardDir}/clock_config.c
   src/boards/${BoardDir}/pin_mux.c
-  src/common/configs.c
-  src/common/gavb_stack.c
-  src/common/system_config.c
+  ${AppCommonPath}/gavb_stack.c
+  ${AppCommonPath}/system_config.c
+  src/configs.c
   src/main.c
   ${CommonPath}/src/early_mem.c
   ${CommonPath}/src/genavbtsn_eth.c
@@ -119,7 +120,7 @@ if (CONFIG_TSN_MULTICORE)
 endif()
 
 zephyr_include_directories(
-  src/common
+  ${AppCommonPath}
   src/boards/${BoardDir}
   ${CommonPath}/src
 )

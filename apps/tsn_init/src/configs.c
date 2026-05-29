@@ -7,11 +7,7 @@
 #include "gavb_stack.h"
 #include "system_config.h"
 
-#if defined(CONFIG_TSN_MULTICORE_SECONDARY)
-#define MAC_ADDR_BYTE_1 0xEF
-#else
 #define MAC_ADDR_BYTE_1 0xEE
-#endif
 
 struct net_config system_net_cfg[CONFIG_APP_LOGICAL_PORTS] = {
     [0] = {

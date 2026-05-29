@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 3.20.0)
 set(TOOLCHAIN_HAS_NEWLIB ON)
 
 set(AppRootPath ${CMAKE_CURRENT_SOURCE_DIR})
-set(AppCommonPath "${AppRootPath}/../src/common")
+set(AppCommonPath "${AppRootPath}/../common")
 set(CommonPath "${AppRootPath}/../../../common")
 
 # Common configuration fragment files
@@ -94,12 +94,12 @@ set(RTOS_ABSTRACTION_LAYER_TARGET app)
 include(${RTOS_ABSTRACTION_LAYER_DIR}/rtos_abstraction_layer.cmake)
 
 target_sources(app PRIVATE
-  ${AppCommonPath}/configs.c
   ${AppCommonPath}/gavb_stack.c
   ${AppCommonPath}/system_config.c
   ${CommonPath}/src/early_mem.c
   ${CommonPath}/src/init_sync.c
   src/boards/${BoardDir}/board.c
+  src/configs.c
   src/main.c
 )
 
