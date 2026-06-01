@@ -177,7 +177,8 @@ int storage_get_dir(const char *dirname, unsigned int n, char *subdirname, unsig
     return rc;
 
 err:
-    subdirname = NULL;
+    if (subdirname)
+        subdirname[0] = '\0';
     return rc;
 }
 
@@ -205,7 +206,8 @@ int storage_get_file(const char *dirname, unsigned int n, char *filename, unsign
     return rc;
 
 err:
-    filename = NULL;
+    if (filename)
+        filename[0] = '\0';
     return rc;
 }
 
@@ -350,7 +352,7 @@ static int rm_dir(char *dirname, unsigned int off, unsigned int end, struct fs_d
 {
     void *shell = storage.shell;
     struct fs_dir_t dir;
-    unsigned int len;
+    int len;
     int rc;
 
     fs_dir_t_init(&dir);
@@ -364,8 +366,9 @@ static int rm_dir(char *dirname, unsigned int off, unsigned int end, struct fs_d
     /* iterate until end of directory */
     while (fs_readdir(&dir, info) == 0 && info->name[0] != 0) {
         len = h_snprintf_strict(dirname + off, end - off, "/%s", info->name);
-        if (len >= (end - off)) {
-            shell_printf(shell, "directory tree (%s/%s) too deep\n", dirname, info->name);
+        if (len < 0 || len >= (end - off)) {
+            shell_printf(shell, "h_snprintf_strict failed: %d\n", len);
+            rc = -1;
             goto err_close;
         }
 
