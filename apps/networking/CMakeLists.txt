@@ -23,7 +23,7 @@ project(networking)
 include(../../common/libs/sys_heap_stats/sys_heap_stats.cmake)
 
 if(CONFIG_CODE_DATA_RELOCATION)
-  include (../../common/relocation.cmake)
+  include (../../common/cmake/relocation.cmake)
 
   file(GLOB_RECURSE APPS_SOURCES
     ${ZEPHYR_BASE}/../zephyr-tsn-apps/apps/networking/src/*.c

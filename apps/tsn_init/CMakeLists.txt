@@ -59,7 +59,7 @@ if(CONFIG_BOARD_MIMXRT1180_EVK_MIMXRT1189_CM33)
   set(BoardDir "evkmimxrt1180/cm33")
 endif()
 
-include (${CommonPath}/relocation.cmake)
+include (${CommonPath}/cmake/relocation.cmake)
 
 include(genavb_sdk.cmake)
 
