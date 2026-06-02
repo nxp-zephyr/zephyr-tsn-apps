@@ -1,33 +1,36 @@
 cmake_minimum_required(VERSION 3.20.0)
 
+set(AppRootPath ${CMAKE_CURRENT_SOURCE_DIR})
+set(CommonPath "${AppRootPath}/../../common")
+
 # Common configuration fragment files
 list(APPEND EXTRA_CONF_FILE
-  "../../common/configs/base.conf"
-  "../../common/configs/logging.conf"
-  "../../common/configs/net.conf"
-  "../../common/configs/runtime-stats.conf"
-  "../../common/configs/shell.conf"
+  "${CommonPath}/configs/base.conf"
+  "${CommonPath}/configs/logging.conf"
+  "${CommonPath}/configs/net.conf"
+  "${CommonPath}/configs/runtime-stats.conf"
+  "${CommonPath}/configs/shell.conf"
 )
 
 # Common device tree overlays
 if("${BOARD}" STREQUAL "mimxrt1180_evk/mimxrt1189/cm33")
   list(APPEND EXTRA_DTC_OVERLAY_FILE
-    "../../common/overlays/nxp_rt118x_cm33_memory.overlay"
-    "../../common/overlays/nxp_rt118x_tune_interrupt_priorities.overlay"
+    "${CommonPath}/overlays/nxp_rt118x_cm33_memory.overlay"
+    "${CommonPath}/overlays/nxp_rt118x_tune_interrupt_priorities.overlay"
   )
 endif()
 
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(networking)
 
-include(../../common/libs/sys_heap_stats/sys_heap_stats.cmake)
+include(${CommonPath}/libs/sys_heap_stats/sys_heap_stats.cmake)
 
 if(CONFIG_CODE_DATA_RELOCATION)
-  include (../../common/cmake/relocation.cmake)
+  include (${CommonPath}/cmake/relocation.cmake)
 
   file(GLOB_RECURSE APPS_SOURCES
-    ${ZEPHYR_BASE}/../zephyr-tsn-apps/apps/networking/src/*.c
-    ${ZEPHYR_BASE}/../zephyr-tsn-apps/common/*.c
+    ${AppRootPath}/src/*.c
+    ${CommonPath}/*.c
   )
 
   # Do not relocate early_mem.c file used for early memcpy and memset
@@ -41,10 +44,10 @@ if(CONFIG_CODE_DATA_RELOCATION)
 
 endif()
 
-zephyr_linker_sources(ITCM_SECTION ../../common/linker/libc_itcm.ld)
-zephyr_linker_sources(ITCM_SECTION ../../common/linker/fsl_mem_ops.ld)
+zephyr_linker_sources(ITCM_SECTION ${CommonPath}/linker/libc_itcm.ld)
+zephyr_linker_sources(ITCM_SECTION ${CommonPath}/linker/fsl_mem_ops.ld)
 
 target_sources(app PRIVATE
   src/main.c
-  ../../common/src/early_mem.c
+  ${CommonPath}/src/early_mem.c
 )
