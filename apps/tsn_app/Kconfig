@@ -5,20 +5,21 @@ source "Kconfig.zephyr"
 
 rsource "../../common/libs/sys_heap_stats/Kconfig"
 
+rsource "../../common/configs/Kconfig.tsn_apps"
+
 rsource "Kconfig.multicore"
 
 config APP_STORAGE
     bool "Enable storage support"
     default y
 
-config APP_TSN_BRIDGE
-    bool
-    default y
+choice APP_TSN_BUILD_PROFILE
+    prompt "TSN application build profile options"
+    default APP_TSN_BUILD_PROFILE_DEFAULT
 
-config APP_FP
-    bool
-    default y
-
-config APP_QBV
-    bool
-    default y
+    config APP_TSN_BUILD_PROFILE_DEFAULT
+        bool "TSN Bridge default profile"
+        select APP_TSN_BRIDGE
+        select APP_QBV
+        select APP_FP
+endchoice

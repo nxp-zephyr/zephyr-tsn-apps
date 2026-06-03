@@ -1,0 +1,27 @@
+# Copyright 2026 NXP
+# SPDX-License-Identifier: BSD-3-Clause
+
+config APP_TSN_ENDPOINT
+    bool
+    default n
+    help
+        TSN endpoint configuration support
+
+config APP_TSN_BRIDGE
+    bool
+    default n
+    depends on !TSN_MULTICORE_SECONDARY
+    help
+        TSN bridge configuration support
+
+config APP_QBV
+    bool
+    default n
+    help
+        QBV support
+
+config APP_FP
+    bool
+    default n
+    help
+        FP support

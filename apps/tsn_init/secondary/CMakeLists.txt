@@ -85,9 +85,10 @@ zephyr_linker_sources(ITCM_SECTION ${CommonPath}/linker/libc_itcm.ld)
 zephyr_linker_sources(ITCM_SECTION ${CommonPath}/linker/fsl_mem_ops.ld)
 zephyr_linker_sources(ITCM_SECTION ${CommonPath}/linker/sw_isr_table.ld)
 
-zephyr_compile_definitions_ifdef(CONFIG_BOARD_MIMXRT1180_EVK_MIMXRT1189_CM7 CONFIG_APP_TSN_ENDPOINT)
-zephyr_compile_definitions_ifdef(CONFIG_BOARD_MIMXRT1180_EVK_MIMXRT1189_CM7 CONFIG_APP_EP_NUM_PORTS=1)
-zephyr_compile_definitions_ifdef(CONFIG_BOARD_MIMXRT1180_EVK_MIMXRT1189_CM7 CONFIG_APP_EP_LOGICAL_PORT_LIST={0})
+if(CONFIG_APP_TSN_BUILD_PROFILE_DEFAULT)
+  zephyr_compile_definitions_ifdef(CONFIG_BOARD_MIMXRT1180_EVK_MIMXRT1189_CM7 CONFIG_APP_EP_LOGICAL_PORT_LIST={0})
+  zephyr_compile_definitions_ifdef(CONFIG_BOARD_MIMXRT1180_EVK_MIMXRT1189_CM7 CONFIG_APP_EP_NUM_PORTS=1)
+endif()
 
 set(RTOS_ABSTRACTION_LAYER_DIR "${ZEPHYR_BASE}/../rtos-abstraction-layer/zephyr")
 set(RTOS_ABSTRACTION_LAYER_TARGET app)
