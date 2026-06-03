@@ -98,18 +98,19 @@ set(RTOS_APPS_TARGET app)
 include(${RtosAppsPath}/rtos_apps_storage.cmake)
 
 target_sources(app PRIVATE
-  ${AppCommonPath}/gavb_stack.c
-  ${AppCommonPath}/system_config.c
-  ${AppCommonPath}/shared_config.c
+  ${CommonPath}/src/boards/${BoardDir}/board.c
+  ${CommonPath}/src/gavb_stack.c
   ${CommonPath}/src/early_mem.c
   ${CommonPath}/src/init_sync.c
-  src/boards/${BoardDir}/board.c
+  ${AppCommonPath}/system_config.c
+  ${AppCommonPath}/shared_config.c
   src/configs.c
   src/main.c
 )
 
 zephyr_include_directories(
-  ${AppCommonPath}
-  ${CommonPath}/src
+  ${CommonPath}/src/boards/${BoardDir}
   src/boards/${BoardDir}
+  ${CommonPath}/src
+  ${AppCommonPath}
 )

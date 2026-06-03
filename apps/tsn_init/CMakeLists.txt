@@ -103,16 +103,16 @@ include(${RtosAppsPath}/rtos_apps_shell.cmake)
 include(${RtosAppsPath}/rtos_apps_storage.cmake)
 
 target_sources(app PRIVATE
-  src/boards/${BoardDir}/board.c
-  src/boards/${BoardDir}/clock_config.c
-  src/boards/${BoardDir}/pin_mux.c
-  ${AppCommonPath}/gavb_stack.c
+  ${CommonPath}/src/boards/${BoardDir}/clock_config.c
+  ${CommonPath}/src/boards/${BoardDir}/pin_mux.c
+  ${CommonPath}/src/boards/${BoardDir}/board.c
+  ${CommonPath}/src/networking_config.c
+  ${CommonPath}/src/genavbtsn_eth.c
+  ${CommonPath}/src/gavb_stack.c
+  ${CommonPath}/src/early_mem.c
   ${AppCommonPath}/system_config.c
   src/configs.c
   src/main.c
-  ${CommonPath}/src/early_mem.c
-  ${CommonPath}/src/genavbtsn_eth.c
-  ${CommonPath}/src/networking_config.c
 )
 
 if (CONFIG_TSN_MULTICORE)
@@ -129,7 +129,8 @@ if (CONFIG_APP_STORAGE)
 endif()
 
 zephyr_include_directories(
-  ${AppCommonPath}
+  ${CommonPath}/src/boards/${BoardDir}
   src/boards/${BoardDir}
   ${CommonPath}/src
+  ${AppCommonPath}
 )

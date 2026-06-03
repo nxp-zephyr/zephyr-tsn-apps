@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 NXP
+ * Copyright 2021-2026 NXP
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -29,7 +29,7 @@
 /*******************************************************************************
  * Code
  ******************************************************************************/
- 
+
 static void BOARD_NetPhysReset(void)
 {
     rgpio_pin_config_t pinConfig = {.pinDirection = kRGPIO_DigitalOutput, .outputLogic = 0};
@@ -136,6 +136,8 @@ extern void MSGINTR1_IRQHandler(void);
 
 void BOARD_InitNVIC(void)
 {
+#if !defined(CONFIG_TSN_MULTICORE)
     IRQ_CONNECT(MSGINTR1_IRQn, 0, MSGINTR1_IRQHandler, NULL, 0);
+#endif
     IRQ_CONNECT(BOARD_GPT_0_IRQ, 1, BOARD_GPT_0_IRQ_HANDLER, NULL, 0);
 }
