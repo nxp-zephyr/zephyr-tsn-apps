@@ -68,6 +68,7 @@ if(CONFIG_CODE_DATA_RELOCATION)
     ${AppCommonPath}/*.c
     ${AppRootPath}/src/*.c
     ${CommonPath}/*.c
+    ${ZEPHYR_BASE}/../rtos-apps/*.c
   )
 
   # Do not relocate early_mem.c file used for early memcpy and memset

@@ -70,10 +70,14 @@ if(CONFIG_CODE_DATA_RELOCATION)
   file(GLOB_RECURSE APPS_SOURCES
     ${AppRootPath}/src/*.c
     ${CommonPath}/*.c
+    ${ZEPHYR_BASE}/../rtos-apps/*.c
   )
 
   # Do not relocate early_mem.c file used for early memcpy and memset
   list(FILTER APPS_SOURCES EXCLUDE REGEX ".*/early_mem.c$")
+
+  # Exclude non-critical rtos-apps components to save up space
+  list(FILTER APPS_SOURCES EXCLUDE REGEX ".*/rtos-apps/shell/.*\\.c$")
 
   zephyr_code_relocate(FILES ${ZEPHYR_KERNEL_SOURCES} ${ZEPHYR_ARCH_SOURCES} ${ZEPHYR_LIB_SOURCES} LOCATION ITCM_TEXT_RODATA NOKEEP)
   zephyr_code_relocate(FILES ${ZEPHYR_KERNEL_SOURCES} ${ZEPHYR_ARCH_SOURCES} ${ZEPHYR_LIB_SOURCES} LOCATION ITCM1_DATA_BSS NOKEEP)
