@@ -1,0 +1,231 @@
+{
+  "SPDXID": "SPDXRef-DOCUMENT",
+  "spdxVersion": "SPDX-2.3",
+  "creationInfo": {
+    "created": "2026-06-05T13:22:46Z",
+    "creators": [
+      "Organization: NXP"
+    ],
+    "licenseListVersion": "3.26"
+  },
+  "name": "Zephyr TSN Apps-0_1",
+  "dataLicense": "CC0-1.0",
+  "documentNamespace": "https://nxp.com/spdx/7bfe9641-7c12-4deb-ae87-c0fc96f85b9b",
+  "packages": [
+    {
+      "SPDXID": "SPDXRef-package-7bfe9641-7c12-4deb-ae87-c0fc96f85b9b",
+      "name": "Zephyr TSN Apps",
+      "versionInfo": "0_1",
+      "licenseConcluded": "(BSD-3-Clause)",
+      "licenseDeclared": "(BSD-3-Clause)",
+      "downloadLocation": "NOASSERTION",
+      "originator": "Organization: Zephyr TSN Apps",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-7bfe9641-7c12-4deb-ae87-c0fc96f85b9b---c4dbff85-b0bc-47eb-aac2-97bd969c0d48",
+      "name": "-",
+      "versionInfo": "rtos-apps--upstream/1_3",
+      "licenseConcluded": "BSD-3-Clause",
+      "licenseDeclared": "BSD-3-Clause",
+      "downloadLocation": "NOASSERTION",
+      "originator": "Organization: nxp",
+      "supplier": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:github/NXP/rtos-apps@1_3",
+          "referenceType": "purl"
+        }
+      ],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-7bfe9641-7c12-4deb-ae87-c0fc96f85b9b---f22e195e-d185-434d-81cc-b8c498342d52",
+      "name": "ARM-software/CMSIS_6",
+      "versionInfo": "v6.0.0",
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "Apache-2.0",
+      "downloadLocation": "NOASSERTION",
+      "originator": "Organization: arm-software",
+      "supplier": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "OTHER",
+          "referenceLocator": "36649513-3ae3-4fb8-979b-fed1505d6f2d",
+          "referenceType": "BlackDuck-ComponentOrigin"
+        },
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:github/arm-software/cmsis_6@v6.0.0",
+          "referenceType": "purl"
+        }
+      ],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-7bfe9641-7c12-4deb-ae87-c0fc96f85b9b---5f7d1554-d815-482d-8943-957dd73c8a82",
+      "name": "nxp-mcuxpresso/mcux-sdk",
+      "versionInfo": "MCUX_2.16.000",
+      "licenseConcluded": "BSD-3-Clause",
+      "licenseDeclared": "BSD-3-Clause",
+      "downloadLocation": "NOASSERTION",
+      "originator": "Organization: nxp-mcuxpresso",
+      "supplier": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "OTHER",
+          "referenceLocator": "76f7861f-555e-4129-b436-56d9991cb657",
+          "referenceType": "BlackDuck-ComponentOrigin"
+        },
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:github/nxp-mcuxpresso/mcux-sdk@MCUX_2.16.000",
+          "referenceType": "purl"
+        }
+      ],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-7bfe9641-7c12-4deb-ae87-c0fc96f85b9b---90a8c618-3615-47b1-80c4-930232b9ca6d",
+      "name": "NXP/GenAVB_TSN",
+      "versionInfo": "8_0_0",
+      "licenseConcluded": "BSD-3-Clause",
+      "licenseDeclared": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "originator": "Organization: nxp",
+      "supplier": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "OTHER",
+          "referenceLocator": "ae5c06f5-6abb-4626-9b20-3febad7fbbb0",
+          "referenceType": "BlackDuck-ComponentOrigin"
+        },
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:github/nxp/genavb_tsn@8_0_0",
+          "referenceType": "purl"
+        }
+      ],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-7bfe9641-7c12-4deb-ae87-c0fc96f85b9b---51b1a442-4f35-4d22-8d2a-2023663f6c3e",
+      "name": "NXP/rtos-abstraction-layer",
+      "versionInfo": "1_7_0",
+      "licenseConcluded": "BSD-3-Clause",
+      "licenseDeclared": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "originator": "Organization: nxp",
+      "supplier": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "OTHER",
+          "referenceLocator": "ea31fd27-5640-4e21-815e-c5d2a0e768c8",
+          "referenceType": "BlackDuck-ComponentOrigin"
+        },
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:github/nxp/rtos-abstraction-layer@1_7_0",
+          "referenceType": "purl"
+        }
+      ],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-7bfe9641-7c12-4deb-ae87-c0fc96f85b9b---7955dd48-6c8f-4be2-838f-095d113d324a",
+      "name": "zephyr",
+      "versionInfo": "v4.4.0",
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "Apache-2.0",
+      "homepage": "https://zephyrproject.org/doc",
+      "downloadLocation": "NOASSERTION",
+      "originator": "Organization: zephyrproject-rtos",
+      "supplier": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "OTHER",
+          "referenceLocator": "363d87fa-6465-411b-bbb3-278f729f701b",
+          "referenceType": "BlackDuck-ComponentOrigin"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:zephyrproject:zephyr:4.4.0:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:zephyrproject_rtos:zephyr:4.4.0:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:o:zephyrproject:zephyr:4.4.0:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:github/zephyrproject-rtos/zephyr@v4.4.0",
+          "referenceType": "purl"
+        }
+      ],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-7bfe9641-7c12-4deb-ae87-c0fc96f85b9b---b9ca6898-c8f0-42c0-9d94-1eb20943cb4f",
+      "name": "Zephyr/hal_nxp",
+      "versionInfo": "20241108-snapshot-3c64cd63",
+      "licenseConcluded": "BSD-3-Clause",
+      "licenseDeclared": "BSD-3-Clause",
+      "downloadLocation": "NOASSERTION",
+      "originator": "Organization: Zephyr/hal_nxp",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    }
+  ],
+  "relationships": [
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-package-7bfe9641-7c12-4deb-ae87-c0fc96f85b9b"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-7bfe9641-7c12-4deb-ae87-c0fc96f85b9b",
+      "relationshipType": "STATIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-7bfe9641-7c12-4deb-ae87-c0fc96f85b9b---51b1a442-4f35-4d22-8d2a-2023663f6c3e"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-7bfe9641-7c12-4deb-ae87-c0fc96f85b9b",
+      "relationshipType": "STATIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-7bfe9641-7c12-4deb-ae87-c0fc96f85b9b---5f7d1554-d815-482d-8943-957dd73c8a82"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-7bfe9641-7c12-4deb-ae87-c0fc96f85b9b",
+      "relationshipType": "STATIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-7bfe9641-7c12-4deb-ae87-c0fc96f85b9b---7955dd48-6c8f-4be2-838f-095d113d324a"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-7bfe9641-7c12-4deb-ae87-c0fc96f85b9b",
+      "relationshipType": "STATIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-7bfe9641-7c12-4deb-ae87-c0fc96f85b9b---90a8c618-3615-47b1-80c4-930232b9ca6d"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-7bfe9641-7c12-4deb-ae87-c0fc96f85b9b",
+      "relationshipType": "STATIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-7bfe9641-7c12-4deb-ae87-c0fc96f85b9b---b9ca6898-c8f0-42c0-9d94-1eb20943cb4f"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-7bfe9641-7c12-4deb-ae87-c0fc96f85b9b",
+      "relationshipType": "STATIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-7bfe9641-7c12-4deb-ae87-c0fc96f85b9b---c4dbff85-b0bc-47eb-aac2-97bd969c0d48"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-7bfe9641-7c12-4deb-ae87-c0fc96f85b9b",
+      "relationshipType": "STATIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-7bfe9641-7c12-4deb-ae87-c0fc96f85b9b---f22e195e-d185-434d-81cc-b8c498342d52"
+    }
+  ]
+}
