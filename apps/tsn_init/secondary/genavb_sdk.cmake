@@ -36,18 +36,15 @@ target_link_libraries(${MCUX_SDK_PROJECT_NAME} PRIVATE genavb_sdk)
 target_link_libraries(${MCUX_SDK_PROJECT_NAME} PRIVATE -Wl,--end-group)
 
 if(CONFIG_CODE_DATA_RELOCATION)
-  zephyr_code_relocate(FILES ${ZEPHYR_BASE}/../gen_avb/rtos/net_port_enetc_ep.c FILTER ${SECTION_F_N_INIT_EXIT} LOCATION ITCM_TEXT_RODATA)
-  zephyr_code_relocate(FILES ${ZEPHYR_BASE}/../gen_avb/rtos/net_port_enetc_ep.c LOCATION DTCM_BSS_DATA)
-
   get_target_property(genavbtsn_libs genavb_sdk GENAVB_SDK_LIBRARIES)
   if (NOT genavbtsn_libs)
     message(FATAL_ERROR "No GENAVB_SDK_LIBRARIES property found for genavb_sdk target ")
   endif()
 
   foreach(genavbtsn_lib IN LISTS genavbtsn_libs)
-    # Place GenAVB/TSN in ocram except for init and exit functions
-    zephyr_code_relocate(LIBRARY ${genavbtsn_lib} FILTER ${SECTION_F_N_INIT_EXIT} LOCATION DTCM_DATA_BSS_NOINIT NOKEEP)
-    zephyr_code_relocate(LIBRARY ${genavbtsn_lib} FILTER ${SECTION_F_N_INIT_EXIT} LOCATION ITCM_TEXT_RODATA NOKEEP)
+    # Place GenAVB/TSN in TCM
+    zephyr_code_relocate(LIBRARY ${genavbtsn_lib} LOCATION DTCM_DATA_BSS_NOINIT NOKEEP)
+    zephyr_code_relocate(LIBRARY ${genavbtsn_lib} LOCATION ITCM_TEXT_RODATA NOKEEP)
   endforeach()
 
   # Place RTOS network buffer heap (NOINIT section) in DTCM non-cacheable memory.
