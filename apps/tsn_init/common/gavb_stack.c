@@ -16,6 +16,8 @@
 #include "genavb/genavb.h"
 #include "genavb/vlan.h"
 
+#include "storage_config.h"
+
 const unsigned int br_port_list[CONFIG_APP_BR_NUM_PORTS] = CONFIG_APP_BR_LOGICAL_PORT_LIST;
 
 static struct genavb_handle *s_genavb_handle = NULL;
@@ -89,9 +91,7 @@ int gavb_stack_init(void)
     genavb_config->srp_config.is_bridge = 1;
 #endif /* CONFIG_APP_TSN_BRIDGE */
 
-    if (storage_cd("/management", true) == 0) {
-        storage_read_uint("is_bridge", &genavb_config->management_config.is_bridge);
-    }
+    storage_read_uint(CONFIG_STORAGE_ROOT "/management", "is_bridge", &genavb_config->management_config.is_bridge);
 
     if (genavb_config->fgptp_config.is_bridge) {
         genavb_config->fgptp_config.port_max = bridge_port_max;
@@ -101,77 +101,63 @@ int gavb_stack_init(void)
         memcpy(genavb_config->fgptp_config.logical_port_list, endpoint_logical_port_list, endpoint_port_max * sizeof(unsigned int));
     }
 
-    if (storage_cd("/fgptp", true) == 0) {
+    storage_read_uint(CONFIG_STORAGE_ROOT "/fgptp", "is_bridge", &genavb_config->fgptp_config.is_bridge);
 
-        storage_read_uint("is_bridge", &genavb_config->fgptp_config.is_bridge);
+    /* Read general parameters */
+    storage_read_uint(CONFIG_STORAGE_ROOT "/fgptp", "force_2011", &genavb_config->fgptp_config.force_2011);
+    storage_read_u64(CONFIG_STORAGE_ROOT "/fgptp", "neighborPropDelayThreshold", &genavb_config->fgptp_config.neighborPropDelayThreshold);
 
-        /* Read general parameters */
-        storage_read_uint("force_2011", &genavb_config->fgptp_config.force_2011);
-        storage_read_u64("neighborPropDelayThreshold", &genavb_config->fgptp_config.neighborPropDelayThreshold);
+    /* Read per-domain parameters */
+    for (i = 0; i < CFG_MAX_GPTP_DOMAINS; i++) {
 
-        /* Read per-domain parameters */
-        for (i = 0; i < CFG_MAX_GPTP_DOMAINS; i++) {
+        if (i != 0)
+            storage_read_int(CONFIG_STORAGE_ROOT "/fgptp", domain_cfg_param_file(i, "domain_number", buf, sizeof(buf)), &genavb_config->fgptp_config.domain_cfg[i].domain_number);
 
-            if (i != 0)
-                storage_read_int(domain_cfg_param_file(i, "domain_number", buf, sizeof(buf)), &genavb_config->fgptp_config.domain_cfg[i].domain_number);
-
-            if (genavb_config->fgptp_config.is_bridge == 1) {
-                genavb_config->fgptp_config.domain_cfg[i].gmCapable = 1;
-                genavb_config->fgptp_config.domain_cfg[i].priority1 = 246;
-            }
-
-            storage_read_u8(domain_cfg_param_file(i, "gmCapable", buf, sizeof(buf)), &genavb_config->fgptp_config.domain_cfg[i].gmCapable);
-            storage_read_u8(domain_cfg_param_file(i, "priority1", buf, sizeof(buf)), &genavb_config->fgptp_config.domain_cfg[i].priority1);
-            storage_read_u8(domain_cfg_param_file(i, "priority2", buf, sizeof(buf)), &genavb_config->fgptp_config.domain_cfg[i].priority2);
-            storage_read_u8(domain_cfg_param_file(i, "clockClass", buf, sizeof(buf)), &genavb_config->fgptp_config.domain_cfg[i].clockClass);
-            storage_read_u8(domain_cfg_param_file(i, "clockAccuracy", buf, sizeof(buf)), &genavb_config->fgptp_config.domain_cfg[i].clockAccuracy);
-            storage_read_u16(domain_cfg_param_file(i, "offsetScaledLogVariance", buf, sizeof(buf)), &genavb_config->fgptp_config.domain_cfg[i].offsetScaledLogVariance);
-
-            /* Read per-port parameters */
-            for (j = 0; j < genavb_config->fgptp_config.port_max; j++) {
-                logical_port_id = genavb_config->fgptp_config.logical_port_list[j];
-                if (i == 0) {
-                    /* Below parameters are only needed for domain 0 */
-
-                    storage_read_int(port_cfg_param_file(logical_port_id, "rxDelayCompensation", buf, sizeof(buf)), &genavb_config->fgptp_config.port_cfg[j].rxDelayCompensation);
-                    storage_read_int(port_cfg_param_file(logical_port_id, "txDelayCompensation", buf, sizeof(buf)), &genavb_config->fgptp_config.port_cfg[j].txDelayCompensation);
-                    storage_read_s8(port_cfg_param_file(logical_port_id, "initialLogPdelayReqInterval", buf, sizeof(buf)), &genavb_config->fgptp_config.port_cfg[j].initialLogPdelayReqInterval);
-                    storage_read_s8(port_cfg_param_file(logical_port_id, "initialLogSyncInterval", buf, sizeof(buf)), &genavb_config->fgptp_config.port_cfg[j].initialLogSyncInterval);
-                    storage_read_s8(port_cfg_param_file(logical_port_id, "initialLogAnnounceInterval", buf, sizeof(buf)), &genavb_config->fgptp_config.port_cfg[j].initialLogAnnounceInterval);
-                    storage_read_s8(port_cfg_param_file(logical_port_id, "operLogPdelayReqInterval", buf, sizeof(buf)), &genavb_config->fgptp_config.port_cfg[j].operLogPdelayReqInterval);
-                    storage_read_s8(port_cfg_param_file(logical_port_id, "operLogSyncInterval", buf, sizeof(buf)), &genavb_config->fgptp_config.port_cfg[j].operLogSyncInterval);
-                    storage_read_u8(port_cfg_param_file(logical_port_id, "allowedLostResponses", buf, sizeof(buf)), &genavb_config->fgptp_config.port_cfg[j].allowedLostResponses);
-                    storage_read_u8(port_cfg_param_file(logical_port_id, "delayMechanism", buf, sizeof(buf)), &genavb_config->fgptp_config.port_cfg[j].delayMechanism[i]);
-                } else {
-                    storage_read_u8(domain_port_cfg_param_file(i, logical_port_id, "delayMechanism", buf, sizeof(buf)), &genavb_config->fgptp_config.port_cfg[j].delayMechanism[i]);
-                }
-            }
-        }
-    } else {
         if (genavb_config->fgptp_config.is_bridge == 1) {
-            for (i = 0; i < CFG_MAX_GPTP_DOMAINS; i++) {
-                genavb_config->fgptp_config.domain_cfg[i].gmCapable = 1;
-                genavb_config->fgptp_config.domain_cfg[i].priority1 = 246;
+            genavb_config->fgptp_config.domain_cfg[i].gmCapable = 1;
+            genavb_config->fgptp_config.domain_cfg[i].priority1 = 246;
+        }
+
+        storage_read_u8(CONFIG_STORAGE_ROOT "/fgptp", domain_cfg_param_file(i, "gmCapable", buf, sizeof(buf)), &genavb_config->fgptp_config.domain_cfg[i].gmCapable);
+        storage_read_u8(CONFIG_STORAGE_ROOT "/fgptp", domain_cfg_param_file(i, "priority1", buf, sizeof(buf)), &genavb_config->fgptp_config.domain_cfg[i].priority1);
+        storage_read_u8(CONFIG_STORAGE_ROOT "/fgptp", domain_cfg_param_file(i, "priority2", buf, sizeof(buf)), &genavb_config->fgptp_config.domain_cfg[i].priority2);
+        storage_read_u8(CONFIG_STORAGE_ROOT "/fgptp", domain_cfg_param_file(i, "clockClass", buf, sizeof(buf)), &genavb_config->fgptp_config.domain_cfg[i].clockClass);
+        storage_read_u8(CONFIG_STORAGE_ROOT "/fgptp", domain_cfg_param_file(i, "clockAccuracy", buf, sizeof(buf)), &genavb_config->fgptp_config.domain_cfg[i].clockAccuracy);
+        storage_read_u16(CONFIG_STORAGE_ROOT "/fgptp", domain_cfg_param_file(i, "offsetScaledLogVariance", buf, sizeof(buf)), &genavb_config->fgptp_config.domain_cfg[i].offsetScaledLogVariance);
+
+        /* Read per-port parameters */
+        for (j = 0; j < genavb_config->fgptp_config.port_max; j++) {
+            logical_port_id = genavb_config->fgptp_config.logical_port_list[j];
+            if (i == 0) {
+                /* Below parameters are only needed for domain 0 */
+
+                storage_read_int(CONFIG_STORAGE_ROOT "/fgptp", port_cfg_param_file(logical_port_id, "rxDelayCompensation", buf, sizeof(buf)), &genavb_config->fgptp_config.port_cfg[j].rxDelayCompensation);
+                storage_read_int(CONFIG_STORAGE_ROOT "/fgptp", port_cfg_param_file(logical_port_id, "txDelayCompensation", buf, sizeof(buf)), &genavb_config->fgptp_config.port_cfg[j].txDelayCompensation);
+                storage_read_s8(CONFIG_STORAGE_ROOT "/fgptp", port_cfg_param_file(logical_port_id, "initialLogPdelayReqInterval", buf, sizeof(buf)), &genavb_config->fgptp_config.port_cfg[j].initialLogPdelayReqInterval);
+                storage_read_s8(CONFIG_STORAGE_ROOT "/fgptp", port_cfg_param_file(logical_port_id, "initialLogSyncInterval", buf, sizeof(buf)), &genavb_config->fgptp_config.port_cfg[j].initialLogSyncInterval);
+                storage_read_s8(CONFIG_STORAGE_ROOT "/fgptp", port_cfg_param_file(logical_port_id, "initialLogAnnounceInterval", buf, sizeof(buf)), &genavb_config->fgptp_config.port_cfg[j].initialLogAnnounceInterval);
+                storage_read_s8(CONFIG_STORAGE_ROOT "/fgptp", port_cfg_param_file(logical_port_id, "operLogPdelayReqInterval", buf, sizeof(buf)), &genavb_config->fgptp_config.port_cfg[j].operLogPdelayReqInterval);
+                storage_read_s8(CONFIG_STORAGE_ROOT "/fgptp", port_cfg_param_file(logical_port_id, "operLogSyncInterval", buf, sizeof(buf)), &genavb_config->fgptp_config.port_cfg[j].operLogSyncInterval);
+                storage_read_u8(CONFIG_STORAGE_ROOT "/fgptp", port_cfg_param_file(logical_port_id, "allowedLostResponses", buf, sizeof(buf)), &genavb_config->fgptp_config.port_cfg[j].allowedLostResponses);
+                storage_read_u8(CONFIG_STORAGE_ROOT "/fgptp", port_cfg_param_file(logical_port_id, "delayMechanism", buf, sizeof(buf)), &genavb_config->fgptp_config.port_cfg[j].delayMechanism[i]);
+            } else {
+                storage_read_u8(CONFIG_STORAGE_ROOT "/fgptp", domain_port_cfg_param_file(i, logical_port_id, "delayMechanism", buf, sizeof(buf)), &genavb_config->fgptp_config.port_cfg[j].delayMechanism[i]);
             }
         }
     }
 
-    if (storage_cd("/srp", true) == 0) {
-        storage_read_uint("is_bridge", &genavb_config->srp_config.is_bridge);
+    storage_read_uint(CONFIG_STORAGE_ROOT "/srp", "is_bridge", &genavb_config->srp_config.is_bridge);
+
+    storage_read_bool(CONFIG_STORAGE_ROOT "/hsr", "hsr_enabled", &genavb_config->hsr_config.hsr_enabled);
+    for (i = 0; i < CONFIG_APP_LOGICAL_PORTS; i++) {
+        uint8_t _hsr_port_type = 0;
+
+        storage_read_u8(CONFIG_STORAGE_ROOT "/hsr", port_cfg_param_file(i, "type", buf, sizeof(buf)), &_hsr_port_type);
+
+        genavb_config->hsr_config.hsr_port[i].type = (hsr_port_type)_hsr_port_type;
+        genavb_config->hsr_config.hsr_port[i].logical_port = i;
     }
-
-    if (storage_cd("/hsr", true) == 0) {
-        storage_read_bool("hsr_enabled", &genavb_config->hsr_config.hsr_enabled);
-        for (i = 0; i < CONFIG_APP_LOGICAL_PORTS; i++) {
-            uint8_t _hsr_port_type = 0;
-
-            storage_read_u8(port_cfg_param_file(i, "type", buf, sizeof(buf)), &_hsr_port_type);
-
-            genavb_config->hsr_config.hsr_port[i].type = (hsr_port_type)_hsr_port_type;
-            genavb_config->hsr_config.hsr_port[i].logical_port = i;
-        }
-        genavb_config->hsr_config.port_max = i;
-    }
+    genavb_config->hsr_config.port_max = i;
 
     if (genavb_config->management_config.is_bridge) {
         genavb_config->management_config.port_max = bridge_port_max;
