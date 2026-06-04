@@ -92,6 +92,11 @@ set(RTOS_ABSTRACTION_LAYER_DIR "${ZEPHYR_BASE}/../rtos-abstraction-layer/zephyr"
 set(RTOS_ABSTRACTION_LAYER_TARGET app)
 include(${RTOS_ABSTRACTION_LAYER_DIR}/rtos_abstraction_layer.cmake)
 
+set(RtosAppsPath "${ZEPHYR_BASE}/../rtos-apps")
+set(RTOS_APPS_TARGET app)
+# Import storage for stubs
+include(${RtosAppsPath}/rtos_apps_storage.cmake)
+
 target_sources(app PRIVATE
   ${AppCommonPath}/gavb_stack.c
   ${AppCommonPath}/system_config.c
