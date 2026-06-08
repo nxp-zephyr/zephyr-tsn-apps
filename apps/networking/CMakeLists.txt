@@ -46,6 +46,7 @@ endif()
 
 zephyr_linker_sources(ITCM_SECTION ${CommonPath}/linker/libc_itcm.ld)
 zephyr_linker_sources(ITCM_SECTION ${CommonPath}/linker/fsl_mem_ops.ld)
+zephyr_linker_sources(ITCM_SECTION ${CommonPath}/linker/sw_isr_table.ld)
 
 target_sources(app PRIVATE
   src/main.c
