@@ -56,6 +56,11 @@ void BOARD_BootClockRUN(void)
     rootCfg.div = 1;
     CLOCK_SetRootClock(kCLOCK_Root_Gpt1, &rootCfg);
 
+    /* Configure GPT2 using SYS_PLL3_DIV2_CLK */
+    rootCfg.mux = kCLOCK_GPT2_ClockRoot_MuxSysPll3Div2;
+    rootCfg.div = 1;
+    CLOCK_SetRootClock(kCLOCK_Root_Gpt2, &rootCfg);
+
     /* Configure ENET using SYS_PLL1_DIV2_CLK */
     rootCfg.mux = kCLOCK_ENET_ClockRoot_MuxSysPll1Div2;
     rootCfg.div = 4;
