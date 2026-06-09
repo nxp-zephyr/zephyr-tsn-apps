@@ -27,7 +27,6 @@
 #include "genavb/qos.h"
 
 #include "gavb_stack.h"
-#include "system_config.h"
 
 LOG_MODULE_REGISTER(genavbtsn_eth);
 
@@ -35,7 +34,6 @@ LOG_MODULE_REGISTER(genavbtsn_eth);
 
 struct ethernetif_config {
     unsigned int port_id;
-    struct net_config *cfg;
 };
 
 #define PKT_MAX_LEN (NET_ETH_MAX_FRAME_SIZE)
@@ -43,6 +41,8 @@ struct ethernetif_config {
 #define LINK_MONITOR_STACK_SIZE 256
 #define LINK_MONITOR_PRIORITY (K_LOWEST_THREAD_PRIO - 2)
 #define LINK_MONITOR_PERIOD_MS 100
+
+#define GENAVBTSN_ETH_MAC_DEFAULT { 0x00, 0x00, 0xCA, 0xFE, 0xBE, 0xEF }
 
 struct ethernetif_ctx {
     struct net_if *iface;
@@ -71,6 +71,32 @@ static const struct device *const genavbtsn_eth_devs[] = {
 
 K_KERNEL_STACK_DEFINE(genavbtsn_eth_link_monitor_stack, LINK_MONITOR_STACK_SIZE);
 static struct k_thread genavbtsn_eth_link_monitor_thread;
+
+static const struct ethernet_api genavbtsn_eth_api;
+
+struct net_if *genavbtsn_eth_get_by_port_id(unsigned int port_id)
+{
+    struct net_if *iface = NULL;
+    const struct device *dev;
+    const struct ethernetif_config *eth_cfg;
+
+    STRUCT_SECTION_FOREACH(net_if, net_iface) {
+        dev = net_if_get_device(net_iface);
+        if (dev) {
+            /* Filter devices that match this driver */
+            if (dev->api != &genavbtsn_eth_api)
+                continue;
+
+            eth_cfg = (const struct ethernetif_config *)dev->config;
+            if (eth_cfg->port_id == port_id) {
+                iface = net_iface;
+                break;
+            }
+        }
+    }
+
+    return iface;
+}
 
 static void genavbtsn_eth_link_state_update(struct ethernetif_ctx *ctx, bool up, bool duplex, uint64_t rate)
 {
@@ -101,14 +127,14 @@ static int genavbtsn_eth_dev_init(const struct device *dev)
 static void genavbtsn_eth_iface_init(struct net_if *iface)
 {
     const struct device *dev = net_if_get_device(iface);
-    const struct ethernetif_config *eth_cfg = (const struct ethernetif_config *)dev->config;
     struct ethernetif_ctx *ctx = (struct ethernetif_ctx *)dev->data;
+    uint8_t hw_addr[6] = GENAVBTSN_ETH_MAC_DEFAULT;
     int rc;
 
     ctx->iface = iface;
 
-    rc = net_if_set_link_addr(iface, eth_cfg->cfg->hw_addr,
-                              sizeof(eth_cfg->cfg->hw_addr),
+    rc = net_if_set_link_addr(iface, hw_addr,
+                              sizeof(hw_addr),
                               NET_LINK_ETHERNET);
     if (rc < 0)
         goto exit;
@@ -524,7 +550,6 @@ static const struct ethernet_api genavbtsn_eth_api = {
     }; \
     static struct ethernetif_config genavbtsn_eth_cfg_##n = { \
         .port_id = DT_INST_PROP(n, port_id), \
-        .cfg = &system_net_cfg[DT_INST_PROP(n, port_id)], \
     }; \
     ETH_NET_DEVICE_DT_INST_DEFINE(n, genavbtsn_eth_dev_init, NULL, \
                     &genavbtsn_eth_ctx_##n, &genavbtsn_eth_cfg_##n, \

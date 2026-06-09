@@ -14,6 +14,7 @@
 #include <zephyr/shell/shell.h>
 #include "genavb_shell.h"
 #include "init_sync.h"
+#include "networking_config.h"
 #include "rtos_apps/storage.h"
 #include "zephyr/shell/shell_uart.h"
 
@@ -41,6 +42,8 @@ static void tsn_init_main(void *p1, void *p2, void *p3)
         goto exit;
 
     genavb_shell_init();
+
+    network_start();
 
     printk("Starting GenAVB/TSN stack: success\n");
 

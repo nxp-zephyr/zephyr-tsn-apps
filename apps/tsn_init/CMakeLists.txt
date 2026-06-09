@@ -112,6 +112,7 @@ target_sources(app PRIVATE
   src/main.c
   ${CommonPath}/src/early_mem.c
   ${CommonPath}/src/genavbtsn_eth.c
+  ${CommonPath}/src/networking_config.c
 )
 
 if (CONFIG_TSN_MULTICORE)
