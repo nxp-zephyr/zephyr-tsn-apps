@@ -11,3 +11,13 @@
 		mbox-names = "tx", "rx";
 	};
 };
+
+&memory {
+	/* Use the last 2 Kb of the M7 DTCM for shared configuration between cores. */
+	m7_dtcm_shm: memory@3043f800 {
+		compatible = "zephyr,memory-region", "mmio-sram";
+		zephyr,memory-region = "M7_DTCM_SHM";
+		reg = < 0x3043f800 DT_SIZE_K(2) >;
+		zephyr,memory-attr = <DT_MEM_ARM(ATTR_MPU_RAM_NOCACHE)>;
+	};
+};

@@ -10,6 +10,7 @@
 
 #include "gavb_stack.h"
 #include "board.h"
+#include "shared_config.h"
 
 #include <zephyr/shell/shell.h>
 #include "genavb_shell.h"
@@ -41,11 +42,13 @@ static void tsn_init_main(void *p1, void *p2, void *p3)
     if (rc < 0)
         goto exit;
 
+    printk("Starting GenAVB/TSN stack: success\n");
+
     genavb_shell_init();
 
     network_start();
 
-    printk("Starting GenAVB/TSN stack: success\n");
+    shared_system_config_set();
 
 #if defined(CONFIG_TSN_MULTICORE_PRIMARY)
     if (init_sync_signal_stack_ready() < 0) {

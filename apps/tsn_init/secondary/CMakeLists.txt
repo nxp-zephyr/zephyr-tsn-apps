@@ -100,6 +100,7 @@ include(${RtosAppsPath}/rtos_apps_storage.cmake)
 target_sources(app PRIVATE
   ${AppCommonPath}/gavb_stack.c
   ${AppCommonPath}/system_config.c
+  ${AppCommonPath}/shared_config.c
   ${CommonPath}/src/early_mem.c
   ${CommonPath}/src/init_sync.c
   src/boards/${BoardDir}/board.c

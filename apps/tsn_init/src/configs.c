@@ -6,6 +6,7 @@
 
 #include "gavb_stack.h"
 #include "system_config.h"
+#include "shared_config.h"
 
 #define MAC_ADDR_BYTE_1 0xEE
 
@@ -50,3 +51,24 @@ struct net_config system_net_cfg[CONFIG_APP_LOGICAL_PORTS] = {
     },
 #endif
 };
+
+#if defined(CONFIG_TSN_MULTICORE)
+
+#ifndef CONFIG_APP_CONTROLLER_NUM_IO_DEVICES
+#define CONFIG_APP_CONTROLLER_NUM_IO_DEVICES 2
+#endif
+
+/* Default values for M7 configuration */
+struct system_config_m7 m7_system_cfg = {
+    .net = {
+         [0] = {
+             .hw_addr = {0x00, 0xBB, 0xCC, 0xDD, 0xEF, 0x10},
+         },
+#if CONFIG_APP_LOGICAL_PORTS_M7 > 1
+         [1] = {
+             .hw_addr = {0x00, 0xBB, 0xCC, 0xDD, 0xEF, 0x11},
+         },
+#endif
+    },
+};
+#endif /* CONFIG_TSN_MULTICORE */

@@ -118,6 +118,7 @@ target_sources(app PRIVATE
 if (CONFIG_TSN_MULTICORE)
   target_sources(app PRIVATE
     ${CommonPath}/src/init_sync.c
+    ${AppCommonPath}/shared_config.c
   )
 endif()
 

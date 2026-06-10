@@ -11,6 +11,16 @@
 
 #define ITCM_SIZE                       DT_REG_SIZE_BY_IDX(DT_NODELABEL(itcm), 0)
 #define DTCM_SIZE                       DT_REG_SIZE_BY_IDX(DT_NODELABEL(dtcm), 0)
+
+/* Even when using a separate DTCM region for shared memory with primary core, use a single
+ * MPU region for the whole DTCM region that covers both dts nodes sizes.
+ */
+#if DT_NODE_HAS_STATUS_OKAY(DT_NODELABEL(dtcm_shm))
+#define DTCM_SHM_SIZE                   DT_REG_SIZE_BY_IDX(DT_NODELABEL(dtcm_shm), 0)
+#else
+#define DTCM_SHM_SIZE                   0
+#endif
+
 #define OCRAM2_SIZE                     DT_REG_SIZE_BY_IDX(DT_NODELABEL(ocram2), 0)
 #define PERIPHERAL_SIZE                 DT_REG_SIZE_BY_IDX(DT_NODELABEL(peripheral), 0)
 
@@ -18,8 +28,10 @@
 #define REGION_ITCM_SIZE                 \
 			REGION_CUSTOMED_MEMORY_SIZE(MEMORY_REGION_SIZE_KB(ITCM_SIZE))
 #define REGION_DTCM_BASE_ADDRESS         DT_REG_ADDR_BY_IDX(DT_NODELABEL(dtcm), 0)
-#define REGION_DTCM_SIZE                 \
-			REGION_CUSTOMED_MEMORY_SIZE(MEMORY_REGION_SIZE_KB(DTCM_SIZE))
+
+#define REGION_DTCM_TOTAL_SIZE                 \
+			REGION_CUSTOMED_MEMORY_SIZE(MEMORY_REGION_SIZE_KB((DTCM_SIZE + DTCM_SHM_SIZE)))
+
 #define REGION_OCRAM2_BASE_ADDRESS   DT_REG_ADDR_BY_IDX(DT_NODELABEL(ocram2), 0)
 #define REGION_OCRAM2_SIZE           \
 			REGION_CUSTOMED_MEMORY_SIZE(MEMORY_REGION_SIZE_KB(OCRAM2_SIZE))
@@ -48,7 +60,7 @@ static const struct arm_mpu_region mpu_regions[] = {
 
 #if DT_NODE_HAS_STATUS_OKAY(DT_NODELABEL(dtcm))
 	MPU_REGION_ENTRY("DTCM", REGION_DTCM_BASE_ADDRESS,
-			 REGION_RAM_NOCACHE_ATTR(REGION_DTCM_SIZE)),
+			 REGION_RAM_NOCACHE_ATTR(REGION_DTCM_TOTAL_SIZE)),
 #endif
 
 #if DT_NODE_HAS_STATUS_OKAY(DT_NODELABEL(ocram2))

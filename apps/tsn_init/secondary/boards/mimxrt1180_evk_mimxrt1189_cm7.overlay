@@ -27,3 +27,23 @@
 &gpt2 {
 	status = "disabled";
 };
+
+/* Allocate the last 2 Kb of the DTCM region for Shared memory with CM33 core
+ * for passing system configuration.
+ */
+
+/delete-node/ &dtcm;
+
+&memory {
+	dtcm: memory@20000000 {
+		compatible = "zephyr,memory-region", "nxp,imx-dtcm";
+		reg = <0x20000000 DT_SIZE_K(254)>;
+		zephyr,memory-region = "DTCM";
+	};
+
+	dtcm_shm: memory@2003f800 {
+		compatible = "zephyr,memory-region", "nxp,imx-dtcm";
+		reg = <0x2003f800 DT_SIZE_K(2)>;
+		zephyr,memory-region = "DTCM_SHM";
+	};
+};

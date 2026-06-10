@@ -10,6 +10,7 @@
 
 #include "gavb_stack.h"
 #include "board.h"
+#include "shared_config.h"
 #include "init_sync.h"
 
 #define TSN_INIT_STACK_SIZE 3048
@@ -21,6 +22,8 @@ struct k_thread tsn_init_thread;
 static void tsn_init_main(void *p1, void *p2, void *p3)
 {
     int rc;
+
+    shared_system_config_get();
 
     printk("Starting GenAVB/TSN stack: enter\n");
 
