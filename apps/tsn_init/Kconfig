@@ -10,3 +10,15 @@ rsource "Kconfig.multicore"
 config APP_STORAGE
     bool "Enable storage support"
     default y
+
+config APP_TSN_BRIDGE
+    bool
+    default y
+
+config APP_FP
+    bool
+    default y
+
+config APP_QBV
+    bool
+    default y
