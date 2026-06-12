@@ -6,8 +6,7 @@
 
 #include "gavb_stack.h"
 #include "rtos_abstraction_layer.h"
-#include "rtos_apps/storage.h"
-#include "rtos_apps/storage_common.h"
+#include "rtos_apps/storage/storage.h"
 
 #include "genavb/error.h"
 #include "genavb/ether.h"

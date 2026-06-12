@@ -4,8 +4,9 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
+#include "rtos_apps/storage/storage.h"
+
 #include "genavb/helpers.h"
-#include "rtos_apps/storage_common.h"
 
 #include "system_config.h"
 #include "storage_config.h"

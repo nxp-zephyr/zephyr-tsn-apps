@@ -16,8 +16,7 @@
 #include "genavb_shell.h"
 #include "init_sync.h"
 #include "networking_config.h"
-#include "rtos_apps/storage.h"
-#include "zephyr/shell/shell_uart.h"
+#include "storage.h"
 
 #define TSN_INIT_STACK_SIZE 4096
 #define TSN_INIT_STACK_PRIO (K_LOWEST_THREAD_PRIO - 4)
@@ -27,16 +26,11 @@ struct k_thread tsn_init_thread;
 
 static void tsn_init_main(void *p1, void *p2, void *p3)
 {
-    void *shell;
     int rc;
 
     printk("Starting GenAVB/TSN stack: enter\n");
 
-    shell = (void *)shell_backend_uart_get_ptr();
-
     storage_init();
-
-    storage_set_shell(shell);
 
     rc = gavb_stack_init();
     if (rc < 0)

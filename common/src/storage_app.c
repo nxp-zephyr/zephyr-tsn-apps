@@ -12,10 +12,14 @@
 #include <zephyr/fs/fs.h>
 #include <zephyr/fs/littlefs.h>
 
-#include "rtos_apps/storage.h"
+#include <zephyr/shell/shell_uart.h>
+
+#include "rtos_apps/shell/shell_storage_app.h"
+#include "rtos_apps/storage/storage_app.h"
 
 #include "genavb/helpers.h"
 
+#include "storage.h"
 #include "storage_config.h"
 #include "shell_config.h"
 
@@ -40,11 +44,6 @@ struct storage_ctx {
 };
 
 static struct storage_ctx storage;
-
-void *storage_get_lfs(void)
-{
-    return mountpoint;
-}
 
 /* get nth dir/file from dirname */
 static int storage_get(const char *dirname, unsigned int n, struct fs_dirent *info)
@@ -382,6 +381,7 @@ err_open:
 int storage_init(void)
 {
     storage.mount = mountpoint;
+    storage.shell = (void *)shell_backend_uart_get_ptr();
 
     /* Check if auto-mounted */
 #if !(FSTAB_ENTRY_DT_MOUNT_FLAGS(PARTITION_NODE) & FS_MOUNT_FLAG_AUTOMOUNT)
@@ -403,15 +403,9 @@ err:
     return -1;
 }
 
-int storage_set_shell(void *shell)
-{
-    storage.shell = shell;
-
-    return 0;
-}
-
 void storage_exit(void)
 {
     fs_unmount(storage.mount);
     storage.mount = NULL;
+    storage.shell = NULL;
 }

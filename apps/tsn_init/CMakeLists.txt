@@ -124,7 +124,7 @@ endif()
 
 if (CONFIG_APP_STORAGE)
   target_sources(app PRIVATE
-    ${CommonPath}/src/storage.c
+    ${CommonPath}/src/storage_app.c
   )
 endif()
 
