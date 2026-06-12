@@ -8,10 +8,12 @@
 
 #include <zephyr/kernel.h>
 
-#include "gavb_stack.h"
-#include "board.h"
+#include "system_config.h"
 #include "shared_config.h"
+#include "gavb_stack.h"
 #include "init_sync.h"
+#include "tsn_app.h"
+#include "board.h"
 
 #define TSN_INIT_STACK_SIZE 3048
 #define TSN_INIT_STACK_PRIO (K_LOWEST_THREAD_PRIO - 4)
@@ -21,21 +23,39 @@ struct k_thread tsn_init_thread;
 
 static void tsn_init_main(void *p1, void *p2, void *p3)
 {
+    struct rtos_apps_tsn_config *app_cfg;
     int rc;
 
     shared_system_config_get();
 
-    printk("Starting GenAVB/TSN stack: enter\n");
+    printk("Starting TSN app: enter\n");
 
-    rc = gavb_stack_init();
-    if (rc < 0)
+    app_cfg = system_config_get_tsn_app();
+    if (!app_cfg) {
+        printk("system_config_get_tsn_app() failed\n");
         goto exit;
+    }
 
-    printk("Starting GenAVB/TSN stack: success\n");
+    if (gavb_stack_init()) {
+        printk("gavb_stack_init() failed\n");
+        goto exit;
+    }
+
+    rc = tsn_app_init(app_cfg);
+    if (rc < 0)
+        goto err_tsn_init;
+
+    printk("Starting TSN app: success\n");
     return;
 
+err_tsn_init:
+    if (gavb_stack_exit() < 0)
+        printk("gavb_stack_exit() failed\n");
+
 exit:
-    printk("Starting GenAVB/TSN stack: failed\n");
+    printk("Starting TSN app: failed\n");
+
+    return;
 }
 
 int main(void)

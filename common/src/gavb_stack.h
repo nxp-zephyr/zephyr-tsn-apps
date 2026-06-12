@@ -44,7 +44,14 @@
 
 extern const unsigned int br_port_list[CONFIG_APP_BR_NUM_PORTS];
 
+struct gavb_pps {
+    genavb_clock_id_t clk_id;
+    struct genavb_timer *t;
+};
+
 struct genavb_handle *gavb_stack_handle(void);
+int gavb_pps_init(struct gavb_pps *pps, genavb_clock_id_t clk_id);
+void gavb_pps_exit(struct gavb_pps *pps);
 int gavb_stack_init(void);
 int gavb_stack_exit(void);
 

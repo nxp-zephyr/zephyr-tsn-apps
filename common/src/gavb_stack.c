@@ -6,6 +6,8 @@
 
 #include "gavb_stack.h"
 #include "rtos_abstraction_layer.h"
+#include "rtos_apps/log.h"
+#include "rtos_apps/types.h"
 #include "rtos_apps/storage/storage.h"
 
 #include "genavb/error.h"
@@ -14,6 +16,7 @@
 #include "genavb/helpers.h"
 #include "genavb/genavb.h"
 #include "genavb/vlan.h"
+#include "genavb/timer.h"
 
 #include "storage_config.h"
 
@@ -51,6 +54,82 @@ static char *domain_port_cfg_param_file(uint8_t instance, uint8_t port, char *pa
         h_snprintf(buf, size, "domain%u/port%u/%s", instance, port, param);
 
     return buf;
+}
+
+static int timer_pps_start(struct gavb_pps *pps)
+{
+    uint64_t now, start_time;
+    int rc;
+
+    rc = genavb_clock_gettime64(pps->clk_id, &now);
+    if (rc != GENAVB_SUCCESS) {
+        log_err("genavb_clock_gettime64() error %d \n", rc);
+        goto err;
+    }
+
+    /* Start time = rounded up second + 1 second */
+    start_time = ((now + NSECS_PER_SEC / 2) / NSECS_PER_SEC + 1) * NSECS_PER_SEC;
+
+    rc = genavb_timer_start(pps->t, start_time, NSECS_PER_SEC, GENAVB_TIMERF_PPS | GENAVB_TIMERF_ABS);
+    if (rc != GENAVB_SUCCESS) {
+        log_err("genavb_timer_start error %d \n", rc);
+        goto err;
+    }
+
+    return 0;
+
+err:
+    return -1;
+}
+
+static void timer_callback(void *data, int count)
+{
+    struct gavb_pps *pps = (struct gavb_pps *)data;
+
+    /* Handle discontinuities */
+    if (count < 0) {
+        timer_pps_start(pps);
+        log_info("discontinuity : callback_counter %d \n", count);
+    }
+}
+
+int gavb_pps_init(struct gavb_pps *pps, genavb_clock_id_t clk_id)
+{
+    int rc;
+
+    pps->clk_id = clk_id;
+
+    rc = genavb_timer_create(&pps->t, pps->clk_id, GENAVB_TIMERF_PPS);
+    if (rc != GENAVB_SUCCESS) {
+        log_err("genavb_timer_create error %d \n", rc);
+        goto err;
+    }
+
+    rc = genavb_timer_set_callback(pps->t, timer_callback, pps);
+    if (rc != GENAVB_SUCCESS) {
+        log_err("genavb_timer_set_callback error %d \n", rc);
+        goto err_destroy;
+    }
+
+    rc = timer_pps_start(pps);
+    if (rc != 0) {
+        log_err("timer_pps_start error %d \n", rc);
+        goto err_destroy;
+    }
+
+    log_info("success, clk_id: %u\n", clk_id);
+    return 0;
+
+err_destroy:
+    genavb_timer_destroy(pps->t);
+
+err:
+    return -1;
+}
+
+void gavb_pps_exit(struct gavb_pps *pps)
+{
+    genavb_timer_destroy(pps->t);
 }
 
 int gavb_stack_init(void)

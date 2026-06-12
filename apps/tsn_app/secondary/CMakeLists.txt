@@ -11,6 +11,7 @@ set(CommonPath "${AppRootPath}/../../../common")
 list(APPEND EXTRA_CONF_FILE
   "${CommonPath}/configs/base_secondary.conf"
   "${CommonPath}/configs/logging.conf"
+  "${CommonPath}/configs/logging_extra_buf.conf"
   "${CommonPath}/configs/runtime-stats.conf"
 )
 
@@ -103,6 +104,8 @@ set(RTOS_APPS_TARGET app)
 include(${RtosAppsPath}/rtos_apps_storage.cmake)
 include(${RtosAppsPath}/rtos_apps_log.cmake)
 include(${RtosAppsPath}/rtos_apps_tsn.cmake)
+include(${RtosAppsPath}/rtos_apps_stats.cmake)
+include(${RtosAppsPath}/rtos_apps_async.cmake)
 
 target_sources(app PRIVATE
   ${CommonPath}/src/boards/${BoardDir}/board.c
@@ -114,6 +117,12 @@ target_sources(app PRIVATE
   src/configs.c
   src/main.c
 )
+
+if (CONFIG_APP_TSN_ENDPOINT)
+  target_sources(app PRIVATE
+    ${AppCommonPath}/tsn_app.c
+  )
+endif()
 
 zephyr_include_directories(
   ${CommonPath}/src/boards/${BoardDir}

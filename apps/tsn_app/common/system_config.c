@@ -64,3 +64,8 @@ struct net_config *system_config_get_net(unsigned int port_id)
 err:
     return NULL;
 }
+
+struct rtos_apps_tsn_config *system_config_get_tsn_app(void)
+{
+    return &system_cfg.app.tsn_app_config;
+}

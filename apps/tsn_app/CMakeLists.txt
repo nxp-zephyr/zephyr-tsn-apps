@@ -101,6 +101,8 @@ set(RtosAppsPath "${ZEPHYR_BASE}/../rtos-apps")
 set(RTOS_APPS_TARGET app)
 include(${RtosAppsPath}/rtos_apps_log.cmake)
 include(${RtosAppsPath}/rtos_apps_tsn.cmake)
+include(${RtosAppsPath}/rtos_apps_stats.cmake)
+include(${RtosAppsPath}/rtos_apps_async.cmake)
 include(${RtosAppsPath}/rtos_apps_shell.cmake)
 include(${RtosAppsPath}/rtos_apps_storage.cmake)
 
@@ -117,6 +119,12 @@ target_sources(app PRIVATE
   src/configs.c
   src/main.c
 )
+
+if (CONFIG_APP_TSN_ENDPOINT)
+  target_sources(app PRIVATE
+    ${AppCommonPath}/tsn_app.c
+  )
+endif()
 
 if (CONFIG_TSN_MULTICORE)
   target_sources(app PRIVATE

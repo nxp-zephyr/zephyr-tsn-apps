@@ -28,6 +28,10 @@
 	status = "disabled";
 };
 
+&gpt2 {
+	status = "disabled";
+};
+
 &flexspi {
 	/* AHB RX buffer: <prefetch priority master_id buf_size> */
 	rx-buffer-config = <1 0 8 32>;

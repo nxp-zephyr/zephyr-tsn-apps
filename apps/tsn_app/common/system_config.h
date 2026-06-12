@@ -34,5 +34,6 @@ extern struct system_config system_cfg;
 void __system_config_get_tsn_app(const char *path, struct rtos_apps_tsn_config *tsn);
 void __system_config_get_net(const char *prefix, unsigned int port_id, struct net_config *net);
 struct net_config *system_config_get_net(unsigned int port_id);
+struct rtos_apps_tsn_config *system_config_get_tsn_app(void);
 
 #endif /* _SYSTEM_CONFIG_H_ */

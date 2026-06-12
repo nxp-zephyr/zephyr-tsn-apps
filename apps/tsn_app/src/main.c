@@ -7,36 +7,62 @@
 #include <stdio.h>
 
 #include <zephyr/kernel.h>
-
-#include "gavb_stack.h"
-#include "board.h"
-#include "shared_config.h"
-
 #include <zephyr/shell/shell.h>
-#include "genavb_shell.h"
-#include "init_sync.h"
+
 #include "networking_config.h"
+#include "system_config.h"
+#include "shared_config.h"
+#include "genavb_shell.h"
+#include "gavb_stack.h"
+#include "init_sync.h"
+#include "tsn_app.h"
 #include "storage.h"
+#include "board.h"
+
+#include "rtos_apps/tsn/tsn_tasks_config.h"
 
 #define TSN_INIT_STACK_SIZE 4096
 #define TSN_INIT_STACK_PRIO (K_LOWEST_THREAD_PRIO - 4)
 
 K_THREAD_STACK_DEFINE(tsn_init_stack, TSN_INIT_STACK_SIZE);
 struct k_thread tsn_init_thread;
+static struct gavb_pps pps;
 
 static void tsn_init_main(void *p1, void *p2, void *p3)
 {
+    struct rtos_apps_tsn_config *app_cfg;
+    struct cyclic_task_config *c_cfg;
     int rc;
 
-    printk("Starting GenAVB/TSN stack: enter\n");
+    printk("Starting TSN app: enter\n");
 
     storage_init();
 
-    rc = gavb_stack_init();
-    if (rc < 0)
+    app_cfg = system_config_get_tsn_app();
+    if (!app_cfg) {
+        printk("system_config_get_tsn_app() failed\n");
         goto exit;
+    }
 
-    printk("Starting GenAVB/TSN stack: success\n");
+    if (gavb_stack_init()) {
+        printk("gavb_stack_init() failed\n");
+        goto exit;
+    }
+
+    c_cfg = tsn_conf_get_cyclic_task(app_cfg->role);
+    if (!c_cfg) {
+        printk("tsn_conf_get_cyclic_task() failed\n");
+        goto err_stack_init;
+    }
+
+    if (gavb_pps_init(&pps, c_cfg->params.clk_id) < 0)
+        printk("gavb_pps_init() failed: pps timer could not be started\n");
+
+    rc = tsn_app_init(app_cfg);
+    if (rc < 0)
+        goto err_tsn_init;
+
+    printk("Starting TSN app: success\n");
 
     genavb_shell_init();
 
@@ -52,8 +78,17 @@ static void tsn_init_main(void *p1, void *p2, void *p3)
 
     return;
 
+err_tsn_init:
+    gavb_pps_exit(&pps);
+
+err_stack_init:
+    if (gavb_stack_exit() < 0)
+        printk("gavb_stack_exit() failed\n");
+
 exit:
-    printk("Starting GenAVB/TSN stack: failed\n");
+    printk("Starting TSN app: failed\n");
+
+    return;
 }
 
 int main(void)
