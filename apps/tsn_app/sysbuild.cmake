@@ -9,7 +9,7 @@ if(SB_CONFIG_TSN_MULTICORE_BUILD)
   endif()
 
   set(SECONDARY_DIR secondary)
-  set(SECONDARY_APP tsn_init_secondary)
+  set(SECONDARY_APP tsn_app_secondary)
 
   ExternalZephyrProject_Add(
       APPLICATION ${SECONDARY_APP}

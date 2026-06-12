@@ -1,0 +1,49 @@
+/*
+ * Copyright 2026 NXP
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+
+ / {
+	/* Make ocram2 as default RAM region for the CM7 core */
+	chosen {
+		zephyr,sram  = &ocram2;
+	};
+
+	mbox-consumer {
+		compatible = "vnd,mbox-consumer";
+		mboxes = <&mbox1_b 0>, <&mbox1_b 1>;
+		mbox-names = "tx", "rx";
+	};
+};
+
+/* Disable peripherals handled outside the Zephyr device model */
+/delete-node/ &netc;
+
+&gpt1 {
+	status = "disabled";
+};
+
+&gpt2 {
+	status = "disabled";
+};
+
+/* Allocate the last 2 Kb of the DTCM region for Shared memory with CM33 core
+ * for passing system configuration.
+ */
+
+/delete-node/ &dtcm;
+
+&memory {
+	dtcm: memory@20000000 {
+		compatible = "zephyr,memory-region", "nxp,imx-dtcm";
+		reg = <0x20000000 DT_SIZE_K(254)>;
+		zephyr,memory-region = "DTCM";
+	};
+
+	dtcm_shm: memory@2003f800 {
+		compatible = "zephyr,memory-region", "nxp,imx-dtcm";
+		reg = <0x2003f800 DT_SIZE_K(2)>;
+		zephyr,memory-region = "DTCM_SHM";
+	};
+};

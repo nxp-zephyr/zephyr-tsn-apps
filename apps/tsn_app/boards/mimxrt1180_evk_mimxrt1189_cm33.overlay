@@ -1,0 +1,75 @@
+/*
+ * Copyright 2026 NXP
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+
+/ {
+	fstab {
+		compatible = "zephyr,fstab";
+		lfs1: lfs1 {
+			compatible = "zephyr,fstab,littlefs";
+			read-size = <16>;
+			prog-size = <16>;
+			cache-size = <64>;
+			lookahead-size = <32>;
+			block-cycles = <512>;
+			partition = <&storage_partition>;
+			mount-point = "/lfs";
+			automount;
+		};
+	};
+};
+
+/* Disable peripherals handled outside the Zephyr device model */
+/delete-node/ &netc;
+
+&gpt1 {
+	status = "disabled";
+};
+
+&flexspi {
+	/* AHB RX buffer: <prefetch priority master_id buf_size> */
+	rx-buffer-config = <1 0 8 32>;
+};
+
+/* Disable all gpio nodes: the stack uses its own RGPIO driver when needed. */
+&gpio1 {
+	status = "disabled";
+};
+
+&gpio2 {
+	status = "disabled";
+};
+
+&gpio3 {
+	status = "disabled";
+};
+
+&gpio4 {
+	status = "disabled";
+};
+
+&gpio5 {
+	status = "disabled";
+};
+
+&gpio6 {
+	status = "disabled";
+};
+
+/ {
+	genavbtsn_eth0: genavbtsn_eth0 {
+		compatible = "nxp,genavbtsn-eth";
+		port-id = <0>;
+		rx-batch-size = <4>;
+		status = "okay";
+	};
+
+	genavbtsn_eth1: genavbtsn_eth1 {
+		compatible = "nxp,genavbtsn-eth";
+		port-id = <1>;
+		rx-batch-size = <4>;
+		status = "okay";
+	};
+};
