@@ -24,7 +24,7 @@ static void __system_config_update_iface(unsigned int port_id)
     if (!iface)
         goto exit;
 
-    __system_config_get_net(CONFIG_STORAGE_ROOT "/port", port_id, system_net_cfg);
+    __system_config_get_net(CONFIG_STORAGE_ROOT "/port", port_id, system_cfg.system_net_cfg);
 
     /* Bring interface down to set the Link Address */
     if (net_if_is_up(iface)) {
@@ -35,25 +35,25 @@ static void __system_config_update_iface(unsigned int port_id)
         }
     }
 
-    rc = net_if_set_link_addr(iface, system_net_cfg[port_id].hw_addr, sizeof(system_net_cfg[port_id].hw_addr),
+    rc = net_if_set_link_addr(iface, system_cfg.system_net_cfg[port_id].hw_addr, sizeof(system_cfg.system_net_cfg[port_id].hw_addr),
                               NET_LINK_ETHERNET);
     if (rc < 0) {
         LOG_ERR("net_if_set_link_addr(%u) failed (%d)", port_id, rc);
         goto exit;
     }
 
-    if (!net_if_ipv4_addr_add(iface, (struct net_in_addr *)&system_net_cfg[port_id].ip_addr, NET_ADDR_MANUAL, 0)) {
+    if (!net_if_ipv4_addr_add(iface, (struct net_in_addr *)&system_cfg.system_net_cfg[port_id].ip_addr, NET_ADDR_MANUAL, 0)) {
         LOG_ERR("net_if_ipv4_addr_add(%u) failed", port_id);
         goto exit;
     }
 
-    if (!net_if_ipv4_set_netmask_by_addr(iface, (struct net_in_addr *)&system_net_cfg[port_id].ip_addr,
-                                         (struct net_in_addr *)&system_net_cfg[port_id].net_mask)) {
+    if (!net_if_ipv4_set_netmask_by_addr(iface, (struct net_in_addr *)&system_cfg.system_net_cfg[port_id].ip_addr,
+                                         (struct net_in_addr *)&system_cfg.system_net_cfg[port_id].net_mask)) {
         LOG_ERR("net_if_ipv4_set_netmask_by_addr(%u) failed", port_id);
         goto exit;
     }
 
-    net_if_ipv4_set_gw(iface, (struct net_in_addr *)&system_net_cfg[port_id].gw_addr);
+    net_if_ipv4_set_gw(iface, (struct net_in_addr *)&system_cfg.system_net_cfg[port_id].gw_addr);
 
     rc = net_if_up(iface);
     if (rc < 0) {

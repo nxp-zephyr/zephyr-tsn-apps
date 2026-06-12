@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2025 NXP
+ * Copyright 2018-2026 NXP
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -21,7 +21,11 @@ struct net_config {
     uint8_t gw_addr[4];
 };
 
-extern struct net_config system_net_cfg[CONFIG_APP_LOGICAL_PORTS];
+struct system_config {
+    struct net_config system_net_cfg[CONFIG_APP_LOGICAL_PORTS];
+};
+
+extern struct system_config system_cfg;
 
 void __system_config_get_net(const char *prefix, unsigned int port_id, struct net_config *net);
 struct net_config *system_config_get_net(unsigned int port_id);

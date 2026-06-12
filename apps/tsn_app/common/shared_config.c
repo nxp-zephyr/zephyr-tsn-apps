@@ -37,10 +37,17 @@ err:
     return -1;
 }
 
+static void system_cfg_get_m7_tsn_params(struct rtos_apps_tsn_config *tsn)
+{
+    __system_config_get_tsn_app(CONFIG_STORAGE_ROOT "/m7/tsn_app", tsn);
+}
+
 static void system_cfg_get_m7_params(struct system_config_m7 *sys_cfg)
 {
     for (int i = 0; i < CONFIG_APP_LOGICAL_PORTS_M7; i++)
         system_cfg_get_m7_net_params(i, sys_cfg->net);
+
+    system_cfg_get_m7_tsn_params(&sys_cfg->app.tsn_app_config);
 }
 
 void shared_system_config_set(void)
@@ -60,11 +67,12 @@ void shared_system_config_set(void)
 #error "No memory region is available for shared configuration"
 #endif
 
-extern struct net_config system_net_cfg[CONFIG_APP_LOGICAL_PORTS];
+extern struct system_config system_cfg;
 
 void shared_system_config_get(void)
 {
     struct system_config_m7 *system_config_m7 = (struct system_config_m7 *)((uintptr_t)(DTCM_SHM_ADDR));
-    memcpy(system_net_cfg, (const void *)system_config_m7->net, sizeof(system_config_m7->net));
+    memcpy(system_cfg.system_net_cfg, (const void *)system_config_m7->net, sizeof(system_config_m7->net));
+    memcpy(&system_cfg.app.tsn_app_config, (const void *)&system_config_m7->app.tsn_app_config, sizeof(system_config_m7->app.tsn_app_config));
 }
 #endif /* CONFIG_TSN_MULTICORE_SECONDARY */

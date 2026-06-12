@@ -101,6 +101,8 @@ set(RtosAppsPath "${ZEPHYR_BASE}/../rtos-apps")
 set(RTOS_APPS_TARGET app)
 # Import storage for stubs
 include(${RtosAppsPath}/rtos_apps_storage.cmake)
+include(${RtosAppsPath}/rtos_apps_log.cmake)
+include(${RtosAppsPath}/rtos_apps_tsn.cmake)
 
 target_sources(app PRIVATE
   ${CommonPath}/src/boards/${BoardDir}/board.c

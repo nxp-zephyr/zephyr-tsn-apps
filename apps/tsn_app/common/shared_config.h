@@ -12,6 +12,7 @@
 
 #include "system_config.h"
 #include "gavb_stack.h"
+#include "rtos_apps/tsn/tsn_entry.h"
 
 #define CONFIG_APP_LOGICAL_PORTS_M7 1
 
@@ -21,6 +22,9 @@
 
 struct system_config_m7 {
     struct net_config net[CONFIG_APP_LOGICAL_PORTS_M7];
+    union {
+        struct rtos_apps_tsn_config tsn_app_config;
+    } app;
 };
 
 #if defined(CONFIG_TSN_MULTICORE)

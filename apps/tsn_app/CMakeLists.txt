@@ -100,6 +100,7 @@ include(${RTOS_ABSTRACTION_LAYER_DIR}/rtos_abstraction_layer.cmake)
 set(RtosAppsPath "${ZEPHYR_BASE}/../rtos-apps")
 set(RTOS_APPS_TARGET app)
 include(${RtosAppsPath}/rtos_apps_log.cmake)
+include(${RtosAppsPath}/rtos_apps_tsn.cmake)
 include(${RtosAppsPath}/rtos_apps_shell.cmake)
 include(${RtosAppsPath}/rtos_apps_storage.cmake)
 
@@ -112,6 +113,7 @@ target_sources(app PRIVATE
   ${CommonPath}/src/gavb_stack.c
   ${CommonPath}/src/early_mem.c
   ${AppCommonPath}/system_config.c
+  ${AppCommonPath}/shared_config.c
   src/configs.c
   src/main.c
 )

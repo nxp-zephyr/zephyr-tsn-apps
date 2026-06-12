@@ -60,11 +60,11 @@ void shared_system_config_set(void)
 #error "No memory region is available for shared configuration"
 #endif
 
-extern struct net_config system_net_cfg[CONFIG_APP_LOGICAL_PORTS];
+extern struct system_config system_cfg;
 
 void shared_system_config_get(void)
 {
     struct system_config_m7 *system_config_m7 = (struct system_config_m7 *)((uintptr_t)(DTCM_SHM_ADDR));
-    memcpy(system_net_cfg, (const void *)system_config_m7->net, sizeof(system_config_m7->net));
+    memcpy(system_cfg.system_net_cfg, (const void *)system_config_m7->net, sizeof(system_config_m7->net));
 }
 #endif /* CONFIG_TSN_MULTICORE_SECONDARY */

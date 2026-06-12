@@ -13,4 +13,4 @@
  * and may be overridden by filesystem attributes configured there (on the
  * primary core).
  */
-struct net_config system_net_cfg[CONFIG_APP_LOGICAL_PORTS] = {0};
+struct system_config system_cfg = {0};

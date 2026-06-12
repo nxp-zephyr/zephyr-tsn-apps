@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2025 NXP
+ * Copyright 2018-2026 NXP
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -13,6 +13,7 @@
 #include <stdint.h>
 
 #include "gavb_stack.h"
+#include "rtos_apps/tsn/tsn_entry.h"
 
 struct net_config {
     uint8_t hw_addr[6];
@@ -21,8 +22,16 @@ struct net_config {
     uint8_t gw_addr[4];
 };
 
-extern struct net_config system_net_cfg[CONFIG_APP_LOGICAL_PORTS];
+struct system_config {
+    struct net_config system_net_cfg[CONFIG_APP_LOGICAL_PORTS];
+    union {
+        struct rtos_apps_tsn_config tsn_app_config;
+    } app;
+};
 
+extern struct system_config system_cfg;
+
+void __system_config_get_tsn_app(const char *path, struct rtos_apps_tsn_config *tsn);
 void __system_config_get_net(const char *prefix, unsigned int port_id, struct net_config *net);
 struct net_config *system_config_get_net(unsigned int port_id);
 
