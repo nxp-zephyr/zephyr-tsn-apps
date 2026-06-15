@@ -1,3 +1,6 @@
+# Copyright 2026 NXP
+# SPDX-License-Identifier: BSD-3-Clause
+
 file(GLOB_RECURSE ZEPHYR_KERNEL_SOURCES
   ${ZEPHYR_BASE}/kernel/*.c
 )

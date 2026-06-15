@@ -1,3 +1,9 @@
+/*
+ * Copyright 2026 NXP
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+
 /* Make ocram1 as default RAM region */
 / {
 	chosen {

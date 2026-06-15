@@ -1,3 +1,6 @@
+# Copyright 2026 NXP
+# SPDX-License-Identifier: BSD-3-Clause
+
 config TSN_MULTICORE
         bool "TSN Multicore"
         depends on SECOND_CORE_MCUX
