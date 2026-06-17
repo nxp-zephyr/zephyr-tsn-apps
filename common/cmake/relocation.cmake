@@ -9,7 +9,10 @@ set(ZEPHYR_ARCH_SOURCES
   ${ZEPHYR_BASE}/arch/arm/core/cortex_m/cpu_idle.c
   ${ZEPHYR_BASE}/arch/arm/core/cortex_m/irq_manage.c
   ${ZEPHYR_BASE}/arch/arm/core/cortex_m/swap_helper.S
+  ${ZEPHYR_BASE}/arch/arm/core/cortex_m/svc.S
   ${ZEPHYR_BASE}/arch/arm/core/cortex_m/thread.c
+  ${ZEPHYR_BASE}/arch/arm/core/mpu/arm_core_mpu.c
+  ${ZEPHYR_BASE}/arch/arm/core/mpu/arm_mpu.c
   ${ZEPHYR_BASE}/arch/common/sw_isr_common.c
 )
 
@@ -19,6 +22,13 @@ if(CONFIG_CPU_CORTEX_M_HAS_VTOR)
     ${ZEPHYR_BASE}/arch/arm/core/cortex_m/isr_wrapper.c
   )
 endif()
+
+set(ZEPHYR_ARCH_FAULT_SOURCES
+  ${ZEPHYR_BASE}/arch/arm/core/cortex_m/fault.c
+  ${ZEPHYR_BASE}/arch/arm/core/cortex_m/fault_s.S
+  ${ZEPHYR_BASE}/arch/arm/core/cortex_m/thread_abort.c
+  ${ZEPHYR_BASE}/arch/arm/core/fatal.c
+)
 
 file(GLOB_RECURSE ZEPHYR_LIB_SOURCES
   ${ZEPHYR_BASE}/lib/*.c
