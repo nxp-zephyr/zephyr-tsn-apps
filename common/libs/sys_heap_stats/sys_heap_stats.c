@@ -19,7 +19,7 @@ extern struct k_heap _system_heap;
 #error "CONFIG_SYS_HEAP_STATS_PERIODIC_LOG enabled but system heap not available"
 #endif
 
-static void sys_heap_stats_fn(struct k_timer *dummy)
+static void sys_heap_stats_fn(struct k_work *work)
 {
     struct sys_memory_stats stats;
     int ret;
@@ -45,7 +45,14 @@ static void sys_heap_stats_fn(struct k_timer *dummy)
 #endif
 }
 
-K_TIMER_DEFINE(sys_heap_timer, sys_heap_stats_fn, NULL);
+static K_WORK_DEFINE(sys_heap_stats_work, sys_heap_stats_fn);
+
+static void sys_heap_timer_expiry_fn(struct k_timer *dummy)
+{
+    k_work_submit(&sys_heap_stats_work);
+}
+
+K_TIMER_DEFINE(sys_heap_timer, sys_heap_timer_expiry_fn, NULL);
 
 static int sys_heap_stats_init(void)
 {
