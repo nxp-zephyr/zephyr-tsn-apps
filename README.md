@@ -50,7 +50,7 @@ Replace ```${revision}``` with any zephyr-tsn-apps release you wish to use. This
 
 ## Building Applications
 
-Make sure to enable the virtual environment setup in [Host Tools](#Host-Tools). 
+Make sure to enable the virtual environment setup in [Prerequisites](#prerequisites). 
 
 Run the `west build` command from the repository root. The generic command format is:
 
@@ -83,3 +83,7 @@ Use the 'west flash' command to flash the built application to the target board:
 ```bash
 west flash --runner <linkserver | jlink>  -d <build_dir>
 ```
+
+## Evaluation
+
+To evaluate the applications, please refer to the [Evaluation Guide](doc/README.md).
