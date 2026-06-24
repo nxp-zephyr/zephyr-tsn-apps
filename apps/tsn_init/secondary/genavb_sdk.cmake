@@ -54,4 +54,8 @@ if(CONFIG_CODE_DATA_RELOCATION)
   zephyr_code_relocate(FILES ${RTOS_ABSTRACTION_SOURCES} LOCATION DTCM_DATA_BSS_NOINIT NOKEEP)
   zephyr_code_relocate(FILES ${RTOS_ABSTRACTION_SOURCES} LOCATION ITCM_TEXT_RODATA NOKEEP)
 
+  # The Zephyr relocation API cannot relocate the base .rodata section
+  # (i.e., sections not defined as .rodata.* subsections).
+  # Handle these using a custom linker snippet.
+  zephyr_linker_sources(ITCM_SECTION ${CommonPath}/linker/genavb_rodata.ld)
 endif()
