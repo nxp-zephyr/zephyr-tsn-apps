@@ -10,3 +10,8 @@ config SECONDARY_BOARD
 config TSN_MULTICORE_BUILD
         bool "Build TSN multicore images"
         default y
+
+config BOOT_SECONDARY_FROM_FLASH
+        depends on TSN_MULTICORE_BUILD
+        bool "Boot secondary core image from Flash, otherwise from RAM"
+        default n

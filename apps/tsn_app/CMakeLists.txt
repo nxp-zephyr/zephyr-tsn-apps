@@ -45,6 +45,16 @@ function(include_mcux_driver driver)
   include(${SdkRootDirPath}/drivers/${driver}/CMakeLists.txt)
 endfunction()
 
+if (CONFIG_TSN_MULTICORE AND NOT CONFIG_CM7_BOOT_FROM_FLASH)
+  set(REMOTE_APP tsn_app_secondary)
+
+  set(REMOTE_ZEPHYR_DIR ${CMAKE_CURRENT_BINARY_DIR}/../${REMOTE_APP}/zephyr)
+
+  # Primary image needs to be aware of size or base address of secondary image
+  target_include_directories(zephyr_interface
+    INTERFACE ${REMOTE_ZEPHYR_DIR}/include/public)
+endif()
+
 if(CONFIG_BOARD_MIMXRT1180_EVK_MIMXRT1189_CM33)
   include_mcux_driver(rgpio)
   include_mcux_driver(gpt)

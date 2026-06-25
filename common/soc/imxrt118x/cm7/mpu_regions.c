@@ -23,6 +23,7 @@
 
 #define OCRAM2_SIZE                     DT_REG_SIZE_BY_IDX(DT_NODELABEL(ocram2), 0)
 #define PERIPHERAL_SIZE                 DT_REG_SIZE_BY_IDX(DT_NODELABEL(peripheral), 0)
+#define HYPER_RAM_SIZE                  DT_REG_SIZE_BY_IDX(DT_NODELABEL(flexspi2), 1)
 
 #define REGION_ITCM_BASE_ADDRESS         DT_REG_ADDR_BY_IDX(DT_NODELABEL(itcm), 0)
 #define REGION_ITCM_SIZE                 \
@@ -38,6 +39,10 @@
 #define REGION_PERIPHERAL_BASE_ADDRESS   DT_REG_ADDR_BY_IDX(DT_NODELABEL(peripheral), 0)
 #define REGION_PERIPHERAL_SIZE           \
 			REGION_CUSTOMED_MEMORY_SIZE(MEMORY_REGION_SIZE_KB(PERIPHERAL_SIZE))
+
+#define REGION_HYPER_RAM_BASE_ADDRESS    DT_REG_ADDR_BY_IDX(DT_NODELABEL(flexspi2), 1)
+#define REGION_HYPER_RAM_SIZE            \
+			REGION_CUSTOMED_MEMORY_SIZE(MEMORY_REGION_SIZE_KB(HYPER_RAM_SIZE))
 
 static const struct arm_mpu_region mpu_regions[] = {
 	/*
@@ -61,6 +66,12 @@ static const struct arm_mpu_region mpu_regions[] = {
 #if DT_NODE_HAS_STATUS_OKAY(DT_NODELABEL(dtcm))
 	MPU_REGION_ENTRY("DTCM", REGION_DTCM_BASE_ADDRESS,
 			 REGION_RAM_NOCACHE_ATTR(REGION_DTCM_TOTAL_SIZE)),
+#endif
+
+#if (DT_NODE_HAS_STATUS_OKAY(DT_NODELABEL(hyperram0))) && !defined(CONFIG_CM7_BOOT_FROM_FLASH)
+	/* When booting from HyperRAM, set the region as FLASH. */
+	MPU_REGION_ENTRY("HYPER_RAM", REGION_HYPER_RAM_BASE_ADDRESS,
+			 REGION_FLASH_ATTR(REGION_HYPER_RAM_SIZE)),
 #endif
 
 #if DT_NODE_HAS_STATUS_OKAY(DT_NODELABEL(ocram2))

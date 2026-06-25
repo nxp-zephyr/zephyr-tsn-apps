@@ -21,7 +21,6 @@ zephyr_get(_TARGET_BOARD VAR BOARD)
 # Common device tree overlays
 if("${_TARGET_BOARD}" STREQUAL "mimxrt1180_evk/mimxrt1189/cm7")
   list(APPEND EXTRA_DTC_OVERLAY_FILE
-    "../../../../zephyr/boards/nxp/mimxrt1180_evk/cm7_flash_boot.overlay"
     "${CommonPath}/overlays/nxp_rt118x_tune_interrupt_priorities.overlay"
   )
 endif()
