@@ -1,0 +1,44 @@
+manifest:
+  defaults:
+    remote: nxp_zephyr
+  remotes:
+    - name: nxp
+      url-base: https://github.com/NXP
+    - name: nxp_zephyr
+      url-base: https://github.com/nxp-zephyr
+  projects:
+    - name: nxp-zephyr
+      west-commands: scripts/west-commands.yml
+      revision: e07ad58e9403bc225cc727b2c31cf1c8b68bd60a
+      import:
+        name-allowlist:
+          - cmsis_6
+          - picolibc
+          - littlefs
+      path: zephyr
+    - name: hal_nxp
+      revision: 9120ddc21af473b3b4889dbc4d26bef6196625a8
+      path: modules/hal/nxp
+
+    - name: GenAVB_TSN
+      remote: nxp
+      revision: refs/tags/8_2_0
+      path: gen_avb
+    - name: rtos-abstraction-layer
+      remote: nxp
+      revision: refs/tags/1_8_0
+    - name: rtos-apps
+      remote: nxp
+      revision: refs/tags/1_4_0
+
+    # Include modules to prevent Kconfig issues
+    - name: els_pkc
+      remote: nxp
+      repo-path: els_pkc
+      revision: c37a05831caf542ff240c3cb6a54da469d5e3c57
+      path: modules/crypto/els_pkc
+    - name: psa_crypto_driver
+      remote: nxp
+      repo-path: psa_crypto_driver
+      revision: 54518163c46c5a63b00ea416f2660139e91d9841
+      path: modules/crypto/psa_crypto_driver
